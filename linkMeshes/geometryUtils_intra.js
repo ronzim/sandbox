@@ -1,10 +1,6 @@
 // Node modules
-// var path = require('path');
 var _ = require('underscore');
-
-// Local modules
-// var api = require(path.join(rootPath, 'js', 'api', 'intraAPI'));
-// var createTree = require(path.join(rootPath, 'resources', 'js', 'yaot'));
+var createTree = require('yaot');
 
 /*  ========================  */
 /*  Geometry methods          */
