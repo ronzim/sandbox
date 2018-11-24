@@ -5,6 +5,7 @@
   "main": "none",
   "scripts": {
     "computeThickness": "electron ./computeThickness/index.html",
+    "crop": "electron ./crop/index.html",
     "debugModule": "node ./debugModule/index.html",
     "linkMeshes": "electron ./linkMeshes/index.html",
     "logs": "node ./logs/index.html",
