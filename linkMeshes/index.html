@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+	<html>
+	<head>
+		<title>Getting Started with Three.js</title>
+		<script src="./three.min.js"></script>
+		<script src="./dat.gui.min.js"></script>
+		<script>
+		window.onload = function() {
+      const TrackballControls = require('./TrackballControls.js');
+			const geometryUtils_ = require('./geometryUtils_intra');
+			const geometryUtils = require('./geometryUtils');
+			const _ = require('underscore');
+
+			var renderer = new THREE.WebGLRenderer();
+			renderer.setSize( 1200, 800 );
+			document.body.appendChild( renderer.domElement );
+
+			var scene = new THREE.Scene();
+
+			var axis = new THREE.AxisHelper(30);
+			scene.add(axis);
+
+			var camera = new THREE.PerspectiveCamera(
+				70,			// Field of view
+				800 / 600,		// Aspect ratio
+				0.1,			// Near plane
+				10000			// Far plane
+			);
+			// var eye = new THREE.Vector3(300, -300, 0);
+			var eye = new THREE.Vector3(70, 20, 20);
+			var up  = new THREE.Vector3(0,0,1);
+			camera.position.copy( eye );
+      camera.up = up;
+			camera.rotateZ(-Math.PI/2);
+			camera.updateProjectionMatrix();
+			console.log(camera)
+
+			var controls = new THREE.TrackballControls(camera);
+			controls.rotateSpeed = 2.0;
+			controls.update();
+
+			var light = new THREE.AmbientLight( 0x666666 );
+			// light.position.set( 100, 100, 100 );
+			scene.add( light );
+
+			// two example meshes
+			var cyl_g = new THREE.CylinderBufferGeometry(10, 10, 30, 8,5, true).applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI/6));
+			var sq_g  = new THREE.BoxBufferGeometry(10,10,10).applyMatrix(new THREE.Matrix4().makeTranslation(0,30,10));
+			var mat   = new THREE.MeshLambertMaterial({color: 'green', wireframe: true});
+			var cyl   = new THREE.Mesh(cyl_g, mat);
+			var sq    = new THREE.Mesh(sq_g, mat);
+			scene.add(cyl);
+			scene.add(sq);
+
+			// selecting vertices
+			var cylVerts = [];
+			var sqVerts  = [];
+			var allCylVerts = cyl_g.attributes.position.array;
+			var allSqVerts  = sq_g.attributes.position.array;
+			for (var i=0; i<allCylVerts.length; i+=3){
+				var res = checkDuplicates(cylVerts, [allCylVerts[i], allCylVerts[i+1], allCylVerts[i+2]])
+				if (allCylVerts[i+1] > 14.5 && !res){
+					console.log('point', res, allCylVerts[i], allCylVerts[i+1], allCylVerts[i+2])
+					cylVerts.push(cyl_g.attributes.position.array[i]);
+					cylVerts.push(cyl_g.attributes.position.array[i+1]);
+					cylVerts.push(cyl_g.attributes.position.array[i+2]);
+					var p = new THREE.SphereGeometry(1,32,32);
+					var m = new THREE.MeshBasicMaterial();
+					var point = new THREE.Mesh(p,m);
+					point.position.set(cyl_g.attributes.position.array[i],cyl_g.attributes.position.array[i+1],cyl_g.attributes.position.array[i+2])
+					scene.add(point);
+				}
+			}
+			for (var i=0; i<allSqVerts.length; i+=3){
+				var res = checkDuplicates(sqVerts, [allSqVerts[i], allSqVerts[i+1], allSqVerts[i+2]]);
+				if (allSqVerts[i+1] < 31 && !res){
+					sqVerts.push(sq_g.attributes.position.array[i]);
+					sqVerts.push(sq_g.attributes.position.array[i+1]);
+					sqVerts.push(sq_g.attributes.position.array[i+2]);
+					var p = new THREE.SphereGeometry(1,32,32);
+					var m = new THREE.MeshBasicMaterial();
+					var point = new THREE.Mesh(p,m);
+					point.position.set(sq_g.attributes.position.array[i],sq_g.attributes.position.array[i+1],sq_g.attributes.position.array[i+2])
+					scene.add(point);
+				}
+			}
+
+			console.log('cyl', cylVerts.length);
+			console.log('sq', sqVerts.length);
+
+			// spline & sample sqVerts to have equal number of points
+			var sampling = geometryUtils_.plainArrayToThreePointsArray(sqVerts);
+			var curve = new THREE.CatmullRomCurve3(sampling, true);
+			var sampledPoints = curve.getPoints(cylVerts.length/3);
+			sampledPoints.splice(-1); // avoid last-first duplicate
+			sampledPoints = geometryUtils_.threePointsArrayToPlainArray(sampledPoints);
+			console.log('sampledPoints', sampledPoints.length);
+
+			for(var p=0; p<sampledPoints.length; p+=3){
+				var q = new THREE.SphereGeometry(1.1,32,32);
+				var m = new THREE.MeshBasicMaterial({color:'red'});
+				var point = new THREE.Mesh(q,m);
+				console.log(sampledPoints.length, sampledPoints[p],sampledPoints[p+1],sampledPoints[p+2])
+				point.position.set(sampledPoints[p],sampledPoints[p+1],sampledPoints[p+2])
+				scene.add(point);
+			}
+
+			// TODO get nearest point for first point
+
+		function sewer(a_verts, b_verts){
+			if (a_verts.length !== b_verts.length){
+				console.warn('vertices number mismatch');
+				return;
+			}
+
+			var vertices = new Float32Array(a_verts.length*3*2);
+			var vertices1 = new Float32Array(a_verts.length*3);
+			var vertices2 = new Float32Array(a_verts.length*3);
+
+			for (var k=0; k<a_verts.length-5; k+=3){
+				vertices1[3*k]   = a_verts[k];
+				vertices1[3*k+1] = a_verts[k+1];
+				vertices1[3*k+2] = a_verts[k+2];
+				vertices1[3*k+3] = b_verts[k];
+				vertices1[3*k+4] = b_verts[k+1];
+				vertices1[3*k+5] = b_verts[k+2];
+				vertices1[3*k+6] = a_verts[k+3];
+				vertices1[3*k+7] = a_verts[k+4];
+				vertices1[3*k+8] = a_verts[k+5];
+			}
+			vertices1[3*k]   = a_verts[k];
+			vertices1[3*k+1] = a_verts[k+1];
+			vertices1[3*k+2] = a_verts[k+2];
+			vertices1[3*k+3] = b_verts[k];
+			vertices1[3*k+4] = b_verts[k+1];
+			vertices1[3*k+5] = b_verts[k+2];
+			vertices1[3*k+6] = a_verts[0];
+			vertices1[3*k+7] = a_verts[1];
+			vertices1[3*k+8] = a_verts[2];
+
+			for (n=0; n<b_verts.length-5; n+=3){
+				vertices2[3*n]   = b_verts[n];
+				vertices2[3*n+1] = b_verts[n+1];
+				vertices2[3*n+2] = b_verts[n+2];
+				vertices2[3*n+3] = a_verts[n+3];
+				vertices2[3*n+4] = a_verts[n+4];
+				vertices2[3*n+5] = a_verts[n+5];
+				vertices2[3*n+6] = b_verts[n+3];
+				vertices2[3*n+7] = b_verts[n+4];
+				vertices2[3*n+8] = b_verts[n+5];
+			}
+			vertices2[3*n]   = b_verts[k];
+			vertices2[3*n+1] = b_verts[k+1];
+			vertices2[3*n+2] = b_verts[k+2];
+			vertices2[3*n+3] = a_verts[0];
+			vertices2[3*n+4] = a_verts[1];
+			vertices2[3*n+5] = a_verts[2];
+			vertices2[3*n+6] = b_verts[0];
+			vertices2[3*n+7] = b_verts[1];
+			vertices2[3*n+8] = b_verts[2];
+
+			// DEV display w/ different colors
+			// console.log(vertices1);
+			// console.log(vertices2);
+			// var lg1 = new THREE.BufferGeometry();
+			// var lg2 = new THREE.BufferGeometry();
+			// lg1.addAttribute( 'position', new THREE.BufferAttribute( vertices1, 3 ) );
+			// lg2.addAttribute( 'position', new THREE.BufferAttribute( vertices2, 3 ) );
+			// var lm1 = new THREE.MeshBasicMaterial({color: 0xff0000, side: THREE.DoubleSide});
+			// var lm2 = new THREE.MeshBasicMaterial({color: 0x00ff00, side: THREE.DoubleSide});
+			// var link1 = new THREE.Mesh(lg1,lm1);
+			// var link2 = new THREE.Mesh(lg2,lm2);
+			// scene.add(link1);
+			// scene.add(link2);
+
+			vertices.set(vertices1, 0);
+			vertices.set(vertices2, vertices1.length);
+
+			return vertices;
+
+		}
+
+			var lg = new THREE.BufferGeometry();
+			var allVerts = sewer(cylVerts, sampledPoints);
+
+			lg.addAttribute( 'position', new THREE.BufferAttribute( allVerts, 3 ) );
+			var lm = new THREE.MeshBasicMaterial({color: 0x0000ff, side: THREE.DoubleSide, wireframe: true});
+			var link = new THREE.Mesh(lg,lm);
+			scene.add(link);
+
+			// TODO compute N layers
+			var cyl_v3_vertices = geometryUtils_.plainArrayToThreePointsArray(cylVerts);
+			var sampl_v3_vertices = geometryUtils_.plainArrayToThreePointsArray(sampledPoints);
+			const N = 5;
+			var layers = [];
+
+			var raw_layers = cyl_v3_vertices.map(function(v, i){
+				var trg_v3 = sampl_v3_vertices[i];
+				var line = new THREE.LineCurve3(v, trg_v3);
+				var layersPoints = geometryUtils_.threePointsArrayToPlainArray(line.getPoints(N-1));
+
+				return _.chunk(layersPoints, 3);
+			});
+
+			console.log(raw_layers);
+
+			// init array of arrays
+			var layers = new Array(cyl_v3_vertices.length).fill(0).map(e => []);
+
+			// fill with layers points
+			for (var l=0; l<raw_layers.length-1; l++){
+				for (var m=0; m<raw_layers[l].length; m++){
+					layers[l] = layers[l].concat(raw_layers[l][m]);
+				}
+			}
+
+			// sew each layer with the follower, storing vertices
+			var finalVertices = new Float32Array(cylVerts*3*(N+1));
+
+			for (var f=0; f<layers.length-1; f++){
+				
+			}
+
+			console.log(layers)
+
+
+			// ===================================================================================================================================================================
+			// ===================================================================================================================================================================
+			// ===================================================================================================================================================================
+
+
+
+			// for dev, placing cylinder somewhere, hp to have its direction + basepoint
+			const cylHeight = 500;
+			const direction = new THREE.Vector3(1,1,1).normalize();
+			const basePoint	= new THREE.Vector3(100,100,100);
+
+			var quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), direction);
+			var rotMat = new THREE.Matrix4().makeRotationFromQuaternion(quaternion);
+			var matrix = geometryUtils.translateAxisMatrix(direction.clone().negate(), cylHeight/2 + basePoint.length());
+			matrix.multiply(rotMat);
+
+			// add helper geometry
+			var s = new THREE.SphereGeometry(5,8,8);
+			var m = new THREE.MeshLambertMaterial({color:'red'});
+			var bp = new THREE.Mesh(s,m);
+			bp.position.copy(basePoint);
+			scene.add(bp);
+			var ah = new THREE.ArrowHelper(direction, basePoint, 50, 'yellow');
+			var eh = new THREE.ArrowHelper(direction, new THREE.Vector3(), 50, 'yellow');
+			scene.add(ah);
+			scene.add(eh);
+
+			// add geometry
+			var g_ = new THREE.CylinderBufferGeometry(100, 100, cylHeight, 16, 10);
+			g_.applyMatrix(matrix);
+			var m_ = new THREE.MeshLambertMaterial({color: 'green', transparent: true, opacity: 0.3});
+			var cylinder_ = new THREE.Mesh(g_,m_);
+			scene.add(cylinder_)
+
+			var g = new THREE.CylinderBufferGeometry(100, 100, cylHeight, 45, 90);
+			g.applyMatrix(matrix);
+			var m = new THREE.MeshLambertMaterial({color: 'green', wireframe: true});
+			var cylinder = new THREE.Mesh(g,m);
+			console.log(cylinder);
+			scene.add(cylinder);
+			cylinder.geometry.computeBoundingSphere();
+
+			// attach to mesh the original mesh
+			cylinder.original = new THREE.Mesh(g.clone(), m.clone());
+
+			// deep copy check
+			// console.log(cylinder.geometry.boundingSphere.radius);
+			// cylinder.geometry.applyMatrix(new THREE.Matrix4().makeScale(0.6,0.6,0.6));
+			// console.log(cylinder.geometry.boundingSphere.radius);
+			// console.log(cylinder.original.geometry.boundingSphere.radius);
+
+			renderer.setClearColor( 0xdddddd, 1);
+
+			function render() {
+			  requestAnimationFrame( render );
+			  controls.update(0.5);
+			  renderer.render( scene, camera );
+			}
+
+			render();
+
+			// key function :
+			// it stretches meshes on a plane defined by a point and mesh main axis
+
+			function stretchIt(mesh, point, sf, type, cb){
+				var verts = mesh.original.geometry.attributes.position.array.slice();
+				mesh.geometry.computeBoundingBox();
+				var bb = mesh.geometry.boundingBox;
+				var h = bb.max.y - bb.min.y;
+				var l = Math.abs(bb.max.y - bb.min.y);
+
+				if(type == 'parabolic') {
+					var a1 = (1-sf) / ((l**2)/4 - point.y*l + point.y**2);
+					var b1 = -2*a1*point.y;
+					var c1 = a1*(point.y**2) + sf;
+					var a2 = (1-sf) / ((l**2)/4 + point.y*l + point.y**2);
+					var b2 = -2*a2*point.y;
+					var c2 = a2*(point.y**2) + sf;
+				}
+				else if (type == 'linear') {
+					var a1 = a2 = 0;
+
+					var b1 = (1-sf) / (l/2 - point.y);
+					var c1 = -(point.y - sf*l/2) / (l/2 - point.y);
+
+					var b2 = (1-sf) / -(l/2 + point.y);
+					var c2 = -(point.y + sf*l/2) / -(l/2 + point.y);
+				}
+				else {
+					console.warn('no matching type');
+					return;
+				}
+
+				var strVerts = verts.map(function(v, k, arr){
+					var pos = k%3;
+
+					switch(pos){
+						case 0:
+										y = (arr[k+1]);
+										if (y>point.y){
+											v *= a1*(y**2) + b1*y + c1;
+										}
+										else{
+											v *= a2*(y**2) + b2*y + c2;
+										}
+										break;
+						case 1:
+										v *= 1.0;
+										break;
+						case 2:
+										y = (arr[k-1]);
+										if (y>point.y){
+											v *= a1*(y**2) + b1*y + c1;
+										}
+										else{
+											v *= a2*(y**2) + b2*y + c2;
+										}
+										break;
+					}
+					return v;
+				})
+				mesh.geometry.attributes.position.array = strVerts.slice();
+				mesh.geometry.attributes.position.needsUpdate = true;
+				// cb(mesh);
+				return mesh;
+			}
+
+			function applyStretch(mesh, point, direction, s, sf, type, cb){
+				console.time('stretch');
+				// move to origin
+				var quaternion = new THREE.Quaternion().setFromUnitVectors(direction, new THREE.Vector3(0,1,0));
+				var rotMat = new THREE.Matrix4().makeRotationFromQuaternion(quaternion);
+				var matrix = geometryUtils.translateAxisMatrix(direction, cylHeight/2 + point.length());
+				matrix.premultiply(rotMat);
+				mesh.geometry.applyMatrix(matrix);
+				mesh.original.geometry.applyMatrix(matrix);
+				// // stretch
+				var bottom = new THREE.Vector3(0, -cylHeight/2, 0);
+				var top    = new THREE.Vector3(0, cylHeight/2, 0);
+				// correction to avoid mesh distortion on top
+				s = s == 1 ? 1.01 : s;
+				var center = new THREE.Vector3().lerpVectors(bottom, top, s);
+				var stretched = stretchIt(mesh, center, sf, type);
+				// // put back in position
+				var inverseMatrix = new THREE.Matrix4().getInverse(matrix);
+				stretched.geometry.applyMatrix(inverseMatrix);
+				stretched.original.geometry.applyMatrix(inverseMatrix);
+				// pass to callback
+				// cb(stretched);
+				console.timeEnd('stretch')
+				if (cb){
+					cb(mesh);
+				}
+			}
+
+			function scaleAsymmetric(mesh, point, axis, sf){
+				mesh.original.geometry.computeBoundingBox();
+
+				// move to origin
+				var quaternion    = new THREE.Quaternion().setFromUnitVectors(axis, new THREE.Vector3(0,1,0));
+				var rotMatrix     = new THREE.Matrix4().makeRotationFromQuaternion(quaternion);
+				var originMatrix  = geometryUtils.translateAxisMatrix(axis, point.length());
+				var scalingMatrix = new THREE.Matrix4().makeScale(1,sf,1);
+				var backPosMatrix = new THREE.Matrix4().getInverse(originMatrix);
+				var quaternion2   = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), axis);
+				var backRotMatrix = new THREE.Matrix4().makeRotationFromQuaternion(quaternion2);
+
+				var matrix = new THREE.Matrix4();
+				matrix.premultiply(originMatrix);
+				matrix.premultiply(rotMatrix);
+				matrix.premultiply(scalingMatrix);
+				matrix.premultiply(backRotMatrix);
+				matrix.premultiply(backPosMatrix);
+				mesh.geometry = mesh.original.geometry.clone().applyMatrix(matrix);
+
+			};
+
+		// applyStretch(cylinder, basePoint, direction, content.position, content.stretch, v);
+
+			function checkDuplicates(array, [x,y,z]){
+				return array.find(function(i,k){
+					var dx = Math.abs(array[k]-x);
+					var dy = Math.abs(array[k+1]-y);
+					var dz = Math.abs(array[k+2]-z);
+					return dx<0.001 && dy<0.001 && dz<0.001;
+				})
+			}
+
+		};
+		</script>
+	</head>
+	<body></body>
+	</html>

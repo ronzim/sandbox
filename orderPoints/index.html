@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+	<html>
+	<head>
+		<title>Getting Started with Three.js</title>
+		<script src="./three.min.js"></script>
+		<script>
+		window.onload = function() {
+      const createTree = require('yaot');
+      const TrackballControls = require('./TrackballControls.js');
+
+			var renderer = new THREE.WebGLRenderer();
+			renderer.setSize( 800, 600 );
+			renderer.setClearColor(new THREE.Color(0x000000));
+			document.body.appendChild( renderer.domElement );
+
+			var scene = new THREE.Scene();
+
+			var camera = new THREE.PerspectiveCamera(
+				70,			// Field of view
+				800 / 600,		// Aspect ratio
+				0.1,			// Near plane
+				10000			// Far plane
+			);
+			camera.position.set( 5, 5, 10 );
+      camera.up = new THREE.Vector3(0,1,0);
+			camera.lookAt(5,5,0);
+
+			var light = new THREE.PointLight( 0xFFFF00 );
+			light.position.set( 10, 0, 10 );
+			scene.add( light );
+
+      // ====================================================
+      const points = [
+        0,0,0.1,
+        0,1,0.1,
+        0,2,0.1,
+        0,3,-0.1,
+        0,4,-0.1,
+        0,5,-0.2,
+        1,5,0.1,
+        2,5,0.2,
+        3,5,0.1,
+        4,5,0,
+        4,4,0,
+        4,3,0.1,
+        5,3,0,
+        6,3,0,
+        7,3,0.2,
+        7,4,0,
+        7,5,0,
+        7,6,-0.2,
+        8,6,-0.1,
+        9,6,-0.1,
+        10,6,0,
+        11,6,0,
+        11,5,0,
+        11,4,0,
+        11,3,0.1,
+        11,2,0.1,
+        11,1,0,
+        11,0,0.1,
+        10,0,0,
+        9,0,0,
+        8,0,0,
+        7,0,0.1,
+        6,0,0.2,
+        5,0,0.1,
+        4,0,0,
+        3,0,-0.1,
+        2,0,-0.1,
+        1,0,0,
+      ];
+
+      var v = [];
+      for (var i=0; i<points.length; i+=3){
+        var pv = new THREE.Vector3(points[i], points[i+1], points[i+2]);
+        v.push(pv);
+      }
+
+      v.sort(a => Math.random())
+
+      var shuffle = [];
+      for (var i=0; i<v.length; i++){
+        shuffle = shuffle.concat(v[i].x, v[i].y, v[i].z);
+      }
+
+      console.log(shuffle);
+
+      var orderedPoints = checkProfile(shuffle);
+
+      var g = new THREE.SphereGeometry(0.3,8,8);
+      var m = new THREE.MeshBasicMaterial({color: 'red'});
+      var sp = new THREE.Mesh(g,m);
+
+      v.forEach(function(v){
+        var s = sp.clone();
+        s.position.copy(v);
+        scene.add(s);
+      });
+
+      var geometry = new THREE.BufferGeometry().setFromPoints(v);
+      var material = new THREE.LineBasicMaterial( { color : 0x00ff00 } );
+      // Create the final object to add to the scene
+      var curveObject = new THREE.Line( geometry, material );
+      scene.add(curveObject);
+
+      var geometry2 = new THREE.BufferGeometry().setFromPoints(orderedPoints);
+      var material2 = new THREE.LineBasicMaterial( { color : 0x0000ff } );
+      // Create the final object to add to the scene
+      var curveObject2 = new THREE.Line( geometry2, material2 );
+      scene.add(curveObject2);
+
+			renderer.setClearColor( 0xdddddd, 1);
+			renderer.render( scene, camera );
+
+      function checkProfile(points){
+        var orderedIds = [];
+
+        var ot = createTree();
+        ot.init(points);
+
+          function findNext(i){
+            var radius = 10;
+            var matches = new Array(10);
+
+            while (matches.length > 2) {
+              matches = ot.intersectSphere(points[i], points[i+1], points[i+2], radius);
+              matches = matches.filter(a => a!==i);
+              radius -= 0.1;
+            }
+            console.log(radius)
+            console.log(orderedIds, matches);
+            if (orderedIds[orderedIds.length-2] == matches[0]){
+              return (matches[1]);
+            }
+            else{
+              return (matches[0]);
+            }
+          }
+
+          var nP = 0;
+          orderedIds.push(nP);
+
+          do {
+            nP = findNext(nP);
+            orderedIds.push(nP);
+          } while (nP !== orderedIds[0])
+
+        console.log(orderedIds);
+
+        var ordPts = [];
+        for (var k=0; k<orderedIds.length; k++){
+          var op = new THREE.Vector3(points[orderedIds[k]], points[orderedIds[k]+1], points[orderedIds[k]+2]);
+          ordPts.push(op);
+        }
+
+        console.log(ordPts);
+        return ordPts;
+
+      }
+
+		};
+		</script>
+	</head>
+	<body></body>
+	</html>

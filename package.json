@@ -1,0 +1,31 @@
+{
+  "name": "sandbox",
+  "version": "1.0.0",
+  "description": "developing a list of little stand alone projects",
+  "main": "none",
+  "scripts": {
+    "computeThickness": "electron ./computeThickness/index.html",
+    "debugModule": "node ./debugModule/index.html",
+    "linkMeshes": "electron ./linkMeshes/index.html",
+    "logs": "node ./logs/index.html",
+    "orderPoints": "electron ./orderPoints/index.html",
+    "pyt": "python ./pyt/pyt.py",
+    "sendMsgSlack": "node ./sendMsgSlack/index.html",
+    "stretchIt": "electron ./stretchIt/index.html",
+    "watchAndClean": "node ./watchAndClean/index.html",
+    "xray": "electron ./xray/index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ronzim/sandbox.git"
+  },
+  "author": "ronzim",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ronzim/sandbox/issues"
+  },
+  "homepage": "https://github.com/ronzim/sandbox#readme",
+  "dependencies": {
+    "underscore": "^1.9.1"
+  }
+}
