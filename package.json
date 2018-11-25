@@ -27,6 +27,9 @@
   },
   "homepage": "https://github.com/ronzim/sandbox#readme",
   "dependencies": {
-    "underscore": "^1.9.1"
+    "net-ping": "^1.2.3",
+    "ping.js": "^0.2.1",
+    "underscore": "^1.9.1",
+    "web-pingjs": "^1.0.1"
   }
 }

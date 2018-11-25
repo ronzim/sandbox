@@ -13,11 +13,11 @@ function initLogger(source){
 
   //Create own getPath and getFilename methods to erase to default ones
 
-  testLogWriter.getPath = function (opt) {
+  logger.getPath = function (opt) {
       return '';
   };
 
-  testLogWriter.getFilename = function (opt) {
+  logger.getFilename = function (opt) {
       var now = moment();
       return (now.format('DD_MMM_YY')).toLowerCase() +
           '.' +
@@ -31,14 +31,17 @@ function initLogger(source){
           alwaysTime : true,
           // alwaysDate : true,
           alwaysLocation : true,
-          defaultTags : ['ccc', name]
+          // defaultTags : []
       },
       // logWriter : {
       //     rootPath : 'testLogs'
       // }
-  }, testLogWriter);
+  }, logger);
 
   process.console = console;
 
+  console.log('CONSOLE INITIALIZATION DONE');
   // return logger;
 }
+
+exports.initLogger = initLogger;
