@@ -21,7 +21,8 @@ function generate(srcVerts, trgVerts, ln, jolly){
   }
 
   var s0 = new THREE.Vector3(srcVerts[0], srcVerts[1], srcVerts[2]);
-  var distances = sampledPoints.map(p => new THREE.Vector3().subVectors(s0, p).dot(direction));
+  // var distances = sampledPoints.map(p => new THREE.Vector3().subVectors(s0, p).dot(direction));
+  var distances = sampledPoints.map(p => new THREE.Vector3().subVectors(p, direction).distanceTo(s0));
   var max = Math.max(...distances);
   var nearestId = distances.indexOf(max);
   var part1 = sampledPoints.slice(0,nearestId);
