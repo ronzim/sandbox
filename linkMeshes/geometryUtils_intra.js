@@ -384,7 +384,7 @@ function checkProfile(points_){
 
   function findNext(i){
     // var radius = 10; // TODO check best init for performance
-    var radius = 10; 
+    var radius = 10;
     var matches = new Array(10);
 
     while (matches.length > 1 && radius > 0) {
@@ -443,4 +443,4 @@ exports.threePointsArrayToPlainArray = threePointsArrayToPlainArray;
 exports.rotateMeshOnAxis     = rotateMeshOnAxis;
 exports.lerp                 = lerp;
 exports.checkProfile         = checkProfile;
-exports.dedup = dedup;
+exports.dedup                = dedup;

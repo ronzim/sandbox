@@ -14,22 +14,22 @@ function generate(srcVerts, trgVerts, ln, jolly){
   var c1 = geometryUtils.getPointsCentroid(geometryUtils_.plainArrayToThreePointsArray(srcVerts));
   var c2 = geometryUtils.getPointsCentroid(sampledPoints);
 
-  var direction = new THREE.Vector3().subVectors(c2,c1).normalize();
+  var direction = new THREE.Vector3().subVectors(c2,c1)//.normalize();
   if (jolly instanceof THREE.Scene){
     var ah = new THREE.ArrowHelper(direction, c1, 30);
     jolly.add(ah);
   }
 
   var s0 = new THREE.Vector3(srcVerts[0], srcVerts[1], srcVerts[2]);
-  // var distances = sampledPoints.map(p => new THREE.Vector3().subVectors(s0, p).dot(direction));
   var distances = sampledPoints.map(p => new THREE.Vector3().subVectors(p, direction).distanceTo(s0));
-  var max = Math.max(...distances);
-  var nearestId = distances.indexOf(max);
+  var min = Math.min(...distances);
+  var nearestId = distances.indexOf(min);
   var part1 = sampledPoints.slice(0,nearestId);
   var part2 = sampledPoints.slice(nearestId);
   sampledPoints = part2.concat(part1);
 
   if (jolly instanceof THREE.Scene){
+    var m = new THREE.MeshBasicMaterial({color: new THREE.Color(Math.random()*100)})
     var s = new THREE.SphereGeometry(0.5, 8,8);
     var srcPoint = new THREE.Mesh(s,m);
     srcPoint.position.copy(s0)
@@ -54,26 +54,7 @@ function generate(srcVerts, trgVerts, ln, jolly){
   // END DEV
 
   // compute ln layers
-  var cyl_v3_vertices   = geometryUtils_.plainArrayToThreePointsArray(srcVerts);
-  var sampl_v3_vertices = geometryUtils_.plainArrayToThreePointsArray(sampledPoints);
-  var layers = [];
-
-  var raw_layers = cyl_v3_vertices.map(function(v, i){
-    var cube_v3 = sampl_v3_vertices[i];
-    var line = new THREE.LineCurve3(v, cube_v3);
-    var layersPoints = geometryUtils_.threePointsArrayToPlainArray(line.getPoints(ln-1));
-    return _.chunk(layersPoints, 3);
-  });
-
-  // init array of arrays
-  var layers = new Array(ln).fill(0).map(e => []);
-
-  // fill with layers points
-  for (var l=0; l<raw_layers.length; l++){
-    for (var m=0; m<raw_layers[l].length; m++){
-      layers[m] = layers[m].concat(raw_layers[l][m]);
-    }
-  }
+  var layers = sampleSpace(srcVerts, sampledPoints, ln);
 
   // sew each layer with the follower, storing vertices
   var finalVertices = new Float32Array(10000000).fill(99999);
@@ -109,6 +90,62 @@ function generate(srcVerts, trgVerts, ln, jolly){
   // slice away unused places
   finalVertices = finalVertices.subarray(0, finalVertices.indexOf(99999));
 
+  // close top and bottom sides
+  var finalTopVertices = new Float32Array(10000000).fill(99999);
+  var finalBottomVertices = new Float32Array(10000000).fill(99999);
+
+  // top
+  var centerTopVerts = new Array(srcVerts.length).fill(0).map(function(e,k){
+    switch (k%3){
+      case 0: return c1.x;
+        break;
+      case 1: return c1.y;
+        break;
+      case 2: return c1.z;
+        break;
+    }
+  });
+
+  console.log(centerTopVerts)
+
+  var topLayers = sampleSpace(srcVerts, centerTopVerts, ln);
+
+  console.log(topLayers)
+
+  for (var f=0; f<topLayers.length-1; f++){
+    var partialTopVertices = sewer(topLayers[f], topLayers[f+1]);
+    finalTopVertices.set(partialVertices, topLayers[f].length*6*f); // TODO from here
+  }
+
+  // bottom
+  var centerBottomVerts = new Array(srcVerts.length).fill(0).map(function(e,k){
+    switch (k%3){
+      case 0: return c2.x;
+        break;
+      case 1: return c2.y;
+        break;
+      case 2: return c2.z;
+        break;
+    }
+  });
+
+  console.log(centerBottomVerts)
+
+  var topLayers = sampleSpace(sampledPoints, centerBottomVerts, ln);
+
+  console.log(topLayers)
+
+  for (var f=0; f<topLayers.length-1; f++){
+    var partialTopVertices = sewer(topLayers[f], topLayers[f+1]);
+    finalTopVertices.set(partialVertices, topLayers[f].length*6*f); // TODO from here
+  }
+
+  // TODO apply stretch
+  // applyStretch(link, c1, direction, 0.5, 0.8, 'parabolic', function(mesh){
+  // 	console.log(mesh)
+  // 	jolly.add(mesh)
+  // })
+
   var lg = new THREE.BufferGeometry();
   lg.addAttribute( 'position', new THREE.BufferAttribute( finalVertices, 3 ) );
   var lm = new THREE.MeshLambertMaterial({flatShading:false, color: 0x0000ff, side: THREE.DoubleSide, wireframe: true, transparent: true, opacity: 0.8});
@@ -116,12 +153,6 @@ function generate(srcVerts, trgVerts, ln, jolly){
 
   console.timeEnd('generate')
   console.log('>>>>>>>>>> final vertices: ', finalVertices.length/3);
-
-  // TODO apply stretch
-  // applyStretch(link, c1, direction, 0.5, 0.8, 'parabolic', function(mesh){
-  // 	console.log(mesh)
-  // 	jolly.add(mesh)
-  // })
 
   if (jolly instanceof THREE.Scene){
     jolly.add(link);
@@ -233,7 +264,6 @@ function extractBoundaryEdges(list){
       return c1 || c2;
     })
     if (res.length == 1){
-      console.log('>>>')
       outEdge.push(list[l][0]);
       outEdge.push(list[l][1]);
       outEdge.push(list[l][2]);
@@ -252,6 +282,31 @@ function reverse(inArray, elementDimension = 3){
     outArray = outArray.concat(subArray);
   }
   return outArray;
+}
+
+function sampleSpace(srcVerts, trgVerts, ln){
+  var src_v3_vertices   = geometryUtils_.plainArrayToThreePointsArray(srcVerts);
+  var trg_v3_vertices = geometryUtils_.plainArrayToThreePointsArray(trgVerts);
+  var layers = [];
+
+  var raw_layers = src_v3_vertices.map(function(v, i){
+    var cube_v3 = trg_v3_vertices[i];
+    var line = new THREE.LineCurve3(v, cube_v3);
+    var layersPoints = geometryUtils_.threePointsArrayToPlainArray(line.getPoints(ln-1));
+    return _.chunk(layersPoints, 3);
+  });
+
+  // init array of arrays
+  var layers = new Array(ln).fill(0).map(e => []);
+
+  // fill with layers points
+  for (var l=0; l<raw_layers.length; l++){
+    for (var m=0; m<raw_layers[l].length; m++){
+      layers[m] = layers[m].concat(raw_layers[l][m]);
+    }
+  }
+
+  return layers;
 }
 
 exports.computeEdgeList = computeEdgeList;

@@ -29,7 +29,7 @@
 				0.1,			// Near plane
 				10000			// Far plane
 			);
-			var eye = new THREE.Vector3(70, 20, 20);
+			var eye = new THREE.Vector3(50, 15, 15);
 			var up  = new THREE.Vector3(0,0,1);
 			camera.position.copy( eye );
       camera.up = up;
@@ -123,12 +123,11 @@
 				// brushVerts = extractEdge(bg);
 				var edges  = linker.computeEdgeList(bg);
 				brushVerts = linker.extractBoundaryEdges(edges);
-				brushVerts = linker.reverse(brushVerts) //TODO check orientation (clockwise or ccw)
 
 				for (let b=0; b<brushVerts.length; b+=3){
 					// DEV
 					let s = new THREE.SphereGeometry(0.05, 8,8);
-					let m = new THREE.MeshBasicMaterial({color: 0xffff00})
+					let m = new THREE.MeshBasicMaterial({color: new THREE.Color(b)})
 					let point = new THREE.Mesh(s,m);
 					point.position.set(brushVerts[b], brushVerts[b+1], brushVerts[b+2]);
 					scene.add(point);
@@ -151,6 +150,7 @@
 				scene.add(abt);
 
 				for (var i=0; i<allAbtVerts.length; i+=3){
+				// for (var i=0; i<0; i+=3){
 					if (allAbtVerts[i+1] > 0.3){
 						// console.log(i, allAbtVerts.length);
 						var res = checkDuplicates(abtVerts, [allAbtVerts[i], allAbtVerts[i+1], allAbtVerts[i+2]]);
@@ -160,11 +160,11 @@
 							abtVerts.push(allAbtVerts[i+2]);
 							// if (i % 10 == 0){
 								// console.log(i, allAbtVerts.length);
-								var p = new THREE.SphereGeometry(0.05,32,32);
-								var m = new THREE.MeshBasicMaterial({color: 'red'});
-								var point = new THREE.Mesh(p,m);
-								point.position.set(allAbtVerts[i],allAbtVerts[i+1],allAbtVerts[i+2])
-								scene.add(point);
+								// var p = new THREE.SphereGeometry(0.05,32,32);
+								// var m = new THREE.MeshBasicMaterial({color: i});
+								// var point = new THREE.Mesh(p,m);
+								// point.position.set(allAbtVerts[i],allAbtVerts[i+1],allAbtVerts[i+2])
+								// scene.add(point);
 							// }
 						}
 					}
@@ -174,11 +174,30 @@
 
 				abtVerts = geometryUtils_.checkProfile(abtVerts);
 
+				for(var i=0; i<abtVerts.length; i+=3){
+					var p = new THREE.SphereGeometry(0.05,32,32);
+					var m = new THREE.MeshBasicMaterial({color: new THREE.Color(i)});
+					var point = new THREE.Mesh(p,m);
+					point.position.set(abtVerts[i],abtVerts[i+1],abtVerts[i+2])
+					scene.add(point);
+				}
+
 				// DEV undersampling
 				// abtVerts = _.filter(abtVerts, function(i,k){
 				// 	return (k % 9 === 0) || (k % 9 === 1) || (k % 9 === 2);
 				// })
 				// console.log('abt_', abtVerts.length/3);
+
+				// var edge = fs.readJSONSync('/Users/orobix/Desktop/edge.json').edge;
+				// console.log(Object.values(edge))
+				// var orderedEdge = geometryUtils_.checkProfile(Object.values(edge));
+
+				//TODO check orientation (clockwise or ccw)
+				// >> if (mismatch){ reverse }
+
+				// computeVerse(brushVerts);
+
+				brushVerts = linker.reverse(brushVerts)
 
 				linker.generate(abtVerts, brushVerts, N, scene);
 				// generate(cylVerts)
@@ -196,6 +215,24 @@
 		}
 
 		render();
+
+		function computeVerse(verts){
+			var v3array = geometryUtils_.plainArrayToThreePointsArray(verts);
+
+			var sum = 0;
+			for (var v=0; v<v3array.length-3; v++){
+				var v1 = v3array[v].clone();
+				var v2 = v3array[v+1].clone();
+				var v3 = v3array[v+2].clone();
+				var e1 = new THREE.Vector3().subVectors(v1, v2);
+				var e2 = new THREE.Vector3().subVectors(v2, v3);
+				var cross_v = e1.clone().cross(e2);
+				var partial = cross_v.length() / (e1.length() + e2.length());
+				console.log(partial);
+				sum += partial;
+			}
+			console.log(sum)
+		}
 
 			function stretchIt(mesh, point, sf, type, cb){
 				var verts = mesh.original.geometry.attributes.position.array.slice();
