@@ -8,7 +8,7 @@
     "crop": "electron ./crop/index.html",
     "debugModule": "node ./debugModule/index.html",
     "linkMeshes": "electron ./linkMeshes/index.html",
-    "logs": "node ./logs/index.html",
+    "logs": "node ./logs/main.js",
     "orderPoints": "electron ./orderPoints/index.html",
     "pyt": "python ./pyt/pyt.py",
     "sendMsgSlack": "node ./sendMsgSlack/index.html",
@@ -27,8 +27,10 @@
   },
   "homepage": "https://github.com/ronzim/sandbox#readme",
   "dependencies": {
+    "jsonlines": "^0.1.1",
     "net-ping": "^1.2.3",
     "ping.js": "^0.2.1",
+    "three-stl-loader": "^1.0.6",
     "underscore": "^1.9.1",
     "web-pingjs": "^1.0.1"
   }

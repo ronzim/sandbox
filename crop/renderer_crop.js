@@ -1,5 +1,12 @@
-// Node modules
-// var AMI = require('ami.js');
+
+/*
+
+  NOTE :
+
+  This example contains some noise about both crop and xray shaders.
+  Must divide the two problems in order to be quickly alive averywhere.
+
+*/
 
 // var AMI               = require('/Users/orobix/Projects/ami/build/ami.js');
 var AMI                  = require('./libs/ami/ami.js');
@@ -238,8 +245,8 @@ initializeData = function(_files) {
   }
   else{
     var fs = require('fs-extra');
-    // var dir = '/home/mattia/Desktop/DICOM/DICOM CASO GUIDATA/BOCCONFRANCESCA_3_15626_40/CT_mpleSeries_6784_2017030909996/';
-    var dir = '/home/mattia/sandbox/material/DICOM/';
+    var dir = '/Users/orobix/Desktop/DICOM/DICOM CASO GUIDATA/BOCCONFRANCESCA_3_15626_40/CT_mpleSeries_6784_2017030909996/';
+    // var dir = '/home/mattia/sandbox/material/DICOM/';
     var files_ = fs.readdirSync(dir);
     // console.log(files_);
     files_ = files_.filter(f => f[0] !== '.');
@@ -317,18 +324,19 @@ function readMultipleFiles(evt) {
 }
 
 function loadMc(stack, scene){
-  // var loader = new STLLoader();
+  var loader = new STLLoader();
   // loader.load('/home/mattia/Desktop/sandbox/bone.stl', function(geometry_) {
-  //   var geometry = new THREE.Geometry().fromBufferGeometry(geometry_);
-  //   console.log('>>>>> DONE');
-  //   setTimeout(function(){
-  //     geometry.computeVertexNormals();
-  //     geometry.computeBoundingBox();
-  //     var mcStackHelper = panorex.initMcStackHelper(stack, geometry);
-  //     console.log(mcStackHelper);
-  //     scene.add(mcStackHelper);
-  //   }, 2000);
-  // });
+  loader.load('../bone.stl', function(geometry_) {
+    var geometry = new THREE.Geometry().fromBufferGeometry(geometry_);
+    console.log('>>>>> DONE');
+    setTimeout(function(){
+      geometry.computeVertexNormals();
+      geometry.computeBoundingBox();
+      var mcStackHelper = panorex.initMcStackHelper(stack, geometry);
+      console.log(mcStackHelper);
+      scene.add(mcStackHelper);
+    }, 2000);
+  });
 
   console.log(stack)
   // var geometry = new THREE.Geometry();
@@ -369,22 +377,22 @@ function loadMc(stack, scene){
   //   }
   // }
 
-  var plane = new THREE.PlaneGeometry(128, 128, 128, 128);
-  var matrix = new THREE.Matrix4().makeTranslation(70,70,50);
-  plane.applyMatrix(matrix);
-  geometry = plane;
-
-  var mcStackHelper = panorex.initMcStackHelper(stack, geometry);
-  console.log(mcStackHelper);
-  scene.add(mcStackHelper);
-  globalStack = mcStackHelper;
-
-  var obj = new THREE.BoxGeometry(30,3,3);
-  var matrixObj = new THREE.Matrix4().makeTranslation(90,70,45);
-  obj.applyMatrix(matrixObj);
-  var mat = new THREE.MeshPhongMaterial({color:'red'});
-  var mesh = new THREE.Mesh(obj, mat);
-  scene.add(mesh);
+  // var plane = new THREE.PlaneGeometry(128, 128, 128, 128);
+  // var matrix = new THREE.Matrix4().makeTranslation(70,70,50);
+  // plane.applyMatrix(matrix);
+  // geometry = plane;
+  //
+  // var mcStackHelper = panorex.initMcStackHelper(stack, geometry);
+  // console.log(mcStackHelper);
+  // scene.add(mcStackHelper);
+  // globalStack = mcStackHelper;
+  //
+  // var obj = new THREE.BoxGeometry(30,3,3);
+  // var matrixObj = new THREE.Matrix4().makeTranslation(90,70,45);
+  // obj.applyMatrix(matrixObj);
+  // var mat = new THREE.MeshPhongMaterial({color:'red'});
+  // var mesh = new THREE.Mesh(obj, mat);
+  // scene.add(mesh);
 }
 
 initializeData();
