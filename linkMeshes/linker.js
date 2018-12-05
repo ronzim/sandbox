@@ -106,15 +106,11 @@ function generate(srcVerts, trgVerts, ln, jolly){
     }
   });
 
-  console.log(centerTopVerts)
-
   var topLayers = sampleSpace(srcVerts, centerTopVerts, ln);
-
-  console.log(topLayers)
 
   for (var f=0; f<topLayers.length-1; f++){
     var partialTopVertices = sewer(topLayers[f], topLayers[f+1]);
-    finalTopVertices.set(partialVertices, topLayers[f].length*6*f); // TODO from here
+    finalTopVertices.set(partialTopVertices, topLayers[f].length*6*f); // TODO from here
   }
 
   // bottom
@@ -129,15 +125,11 @@ function generate(srcVerts, trgVerts, ln, jolly){
     }
   });
 
-  console.log(centerBottomVerts)
-
   var topLayers = sampleSpace(sampledPoints, centerBottomVerts, ln);
 
-  console.log(topLayers)
-
   for (var f=0; f<topLayers.length-1; f++){
-    var partialTopVertices = sewer(topLayers[f], topLayers[f+1]);
-    finalTopVertices.set(partialVertices, topLayers[f].length*6*f); // TODO from here
+    var partialBottomVertices = sewer(topLayers[f], topLayers[f+1]);
+    finalBottomVertices.set(partialBottomVertices, topLayers[f].length*6*f);
   }
 
   // TODO apply stretch
@@ -146,13 +138,24 @@ function generate(srcVerts, trgVerts, ln, jolly){
   // 	jolly.add(mesh)
   // })
 
+  finalTopVertices = finalTopVertices.subarray(0, finalTopVertices.indexOf(99999));
+  finalBottomVertices = finalBottomVertices.subarray(0, finalBottomVertices.indexOf(99999));
+  console.log(finalTopVertices.length, finalBottomVertices.length, finalVertices.length)
+
+  var completeVertices = new Float32Array(finalVertices.length + finalTopVertices.length + finalBottomVertices.length);
+  completeVertices.set(finalVertices, 0);
+  completeVertices.set(finalTopVertices, finalVertices.length);
+  completeVertices.set(finalBottomVertices, finalVertices.length + finalTopVertices.length);
+  console.log(completeVertices.length);
+
   var lg = new THREE.BufferGeometry();
-  lg.addAttribute( 'position', new THREE.BufferAttribute( finalVertices, 3 ) );
-  var lm = new THREE.MeshLambertMaterial({flatShading:false, color: 0x0000ff, side: THREE.DoubleSide, wireframe: true, transparent: true, opacity: 0.8});
+  lg.addAttribute( 'position', new THREE.BufferAttribute( completeVertices, 3 ) );
+  // var lm = new THREE.MeshLambertMaterial({flatShading:false, color: 0x0000ff, side: THREE.DoubleSide, wireframe: true, transparent: true, opacity: 0.8});
+  var lm = new THREE.MeshPhongMaterial({flatShading:false, color: 0x0000ff, side: THREE.DoubleSide, wireframe: false, transparent: true, opacity: 0.8});
   var link = new THREE.Mesh(lg,lm);
 
   console.timeEnd('generate')
-  console.log('>>>>>>>>>> final vertices: ', finalVertices.length/3);
+  console.log('>>>>>>>>>> complete vertices: ', completeVertices.length/3);
 
   if (jolly instanceof THREE.Scene){
     jolly.add(link);
