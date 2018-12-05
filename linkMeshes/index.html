@@ -195,9 +195,12 @@
 				//TODO check orientation (clockwise or ccw)
 				// >> if (mismatch){ reverse }
 
-				// computeVerse(brushVerts);
+				console.log(brushVerts);
 
+				computeVerse(brushVerts);
 				brushVerts = linker.reverse(brushVerts)
+
+				computeVerse(brushVerts);
 
 				linker.generate(abtVerts, brushVerts, N, scene);
 				// generate(cylVerts)
@@ -219,19 +222,33 @@
 		function computeVerse(verts){
 			var v3array = geometryUtils_.plainArrayToThreePointsArray(verts);
 
-			var sum = 0;
-			for (var v=0; v<v3array.length-3; v++){
-				var v1 = v3array[v].clone();
-				var v2 = v3array[v+1].clone();
-				var v3 = v3array[v+2].clone();
-				var e1 = new THREE.Vector3().subVectors(v1, v2);
-				var e2 = new THREE.Vector3().subVectors(v2, v3);
-				var cross_v = e1.clone().cross(e2);
-				var partial = cross_v.length() / (e1.length() + e2.length());
-				console.log(partial);
-				sum += partial;
-			}
-			console.log(sum)
+			var v1 = v3array[0];
+			var v2 = v3array[Math.floor(v3array.length/3)];
+			var v3 = v3array[Math.floor(v3array.length*2/3)];
+
+			var p = new THREE.SphereGeometry(0.3,32,32);
+			var point1 = new THREE.Mesh(p,new THREE.MeshBasicMaterial({color: 'red'}));
+			var point2 = new THREE.Mesh(p,new THREE.MeshBasicMaterial({color: 'yellow'}));
+			var point3 = new THREE.Mesh(p,new THREE.MeshBasicMaterial({color: 'green'}));
+			point1.position.copy(v1)
+			point2.position.copy(v2)
+			point3.position.copy(v3)
+			scene.add(point1);
+			scene.add(point2);
+			scene.add(point3);
+
+			var c = geometryUtils.getPointsCentroid([v1, v2, v3]);
+
+			var e1 = new THREE.Vector3().subVectors(v1, c);
+			var e2 = new THREE.Vector3().subVectors(v2, c);
+			var e3 = new THREE.Vector3().subVectors(v3, c);
+
+			// orientation = (y2 - y1)*(x3 - x2) - (y3 - y2)*(x2 - x1)
+
+			var orientation = (e2.y - e1.y)*(e3.x - e2.x) - (e3.y - e2.y)*(e2.x - e1.x);
+
+			return orientation;
+
 		}
 
 			function stretchIt(mesh, point, sf, type, cb){

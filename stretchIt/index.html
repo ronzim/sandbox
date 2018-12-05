@@ -4,6 +4,8 @@
 		<title>Getting Started with Three.js</title>
 		<script src="./three.min.js"></script>
 		<script src="./dat.gui.min.js"></script>
+		<script src="./STLLoader.js"></script>
+
 		<script>
 		window.onload = function() {
       const TrackballControls = require('./TrackballControls.js');
@@ -41,49 +43,78 @@
 			scene.add( light );
 
 			// for dev, placing cylinder somewhere, hp to have its direction + basepoint
-			const cylHeight = 500;
-			const direction = new THREE.Vector3(1,1,1).normalize();
-			const basePoint	= new THREE.Vector3(100,100,100);
-
-			var quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), direction);
-			var rotMat = new THREE.Matrix4().makeRotationFromQuaternion(quaternion);
-			var matrix = geometryUtils.translateAxisMatrix(direction.clone().negate(), cylHeight/2 + basePoint.length());
-			matrix.multiply(rotMat);
+			// const cylHeight = 500;
+			// const direction = new THREE.Vector3(1,1,1).normalize();
+			// const basePoint	= new THREE.Vector3(100,100,100);
+			//
+			// var quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), direction);
+			// var rotMat = new THREE.Matrix4().makeRotationFromQuaternion(quaternion);
+			// var matrix = geometryUtils.translateAxisMatrix(direction.clone().negate(), cylHeight/2 + basePoint.length());
+			// matrix.multiply(rotMat);
 
 			// add helper geometry
-			var s = new THREE.SphereGeometry(5,8,8);
-			var m = new THREE.MeshLambertMaterial({color:'red'});
-			var bp = new THREE.Mesh(s,m);
-			bp.position.copy(basePoint);
-			scene.add(bp);
-			var ah = new THREE.ArrowHelper(direction, basePoint, 50, 'yellow');
-			var eh = new THREE.ArrowHelper(direction, new THREE.Vector3(), 50, 'yellow');
-			scene.add(ah);
-			scene.add(eh);
+			// var s = new THREE.SphereGeometry(5,8,8);
+			// var m = new THREE.MeshLambertMaterial({color:'red'});
+			// var bp = new THREE.Mesh(s,m);
+			// bp.position.copy(basePoint);
+			// scene.add(bp);
+			// var ah = new THREE.ArrowHelper(direction, basePoint, 50, 'yellow');
+			// var eh = new THREE.ArrowHelper(direction, new THREE.Vector3(), 50, 'yellow');
+			// scene.add(ah);
+			// scene.add(eh);
 
 			// add geometry
-			var g_ = new THREE.CylinderBufferGeometry(100, 100, cylHeight, 16, 10);
-			g_.applyMatrix(matrix);
-			var m_ = new THREE.MeshLambertMaterial({color: 'green', transparent: true, opacity: 0.3});
-			var cylinder_ = new THREE.Mesh(g_,m_);
-			scene.add(cylinder_)
-
-			var g = new THREE.CylinderBufferGeometry(100, 100, cylHeight, 45, 90);
-			g.applyMatrix(matrix);
-			var m = new THREE.MeshLambertMaterial({color: 'green', wireframe: true});
-			var cylinder = new THREE.Mesh(g,m);
-			console.log(cylinder);
-			scene.add(cylinder);
-			cylinder.geometry.computeBoundingSphere();
+			// var g_ = new THREE.CylinderBufferGeometry(100, 100, cylHeight, 16, 10);
+			// g_.applyMatrix(matrix);
+			// var m_ = new THREE.MeshLambertMaterial({color: 'green', transparent: true, opacity: 0.3});
+			// var cylinder_ = new THREE.Mesh(g_,m_);
+			// scene.add(cylinder_)
+			//
+			// var g = new THREE.CylinderBufferGeometry(100, 100, cylHeight, 45, 90);
+			// g.applyMatrix(matrix);
+			// var m = new THREE.MeshLambertMaterial({color: 'green', wireframe: true});
+			// var cylinder = new THREE.Mesh(g,m);
+			// console.log(cylinder);
+			// scene.add(cylinder);
+			// cylinder.geometry.computeBoundingSphere();
 
 			// attach to mesh the original mesh
-			cylinder.original = new THREE.Mesh(g.clone(), m.clone());
+			// cylinder.original = new THREE.Mesh(g.clone(), m.clone());
 
 			// deep copy check
 			// console.log(cylinder.geometry.boundingSphere.radius);
 			// cylinder.geometry.applyMatrix(new THREE.Matrix4().makeScale(0.6,0.6,0.6));
 			// console.log(cylinder.geometry.boundingSphere.radius);
 			// console.log(cylinder.original.geometry.boundingSphere.radius);
+
+			// LOAD A REAL GEOMETRY
+
+			var abt, basePoint, direction;
+			var loader = new THREE.STLLoader();
+
+			loader.load('/users/orobix/Desktop/testOpera/abutment.stl', function (g) {
+				var m = new THREE.MeshLambertMaterial({color: 'green', wireframe: true});
+				abt = new THREE.Mesh(g,m);
+				abt.original = new THREE.Mesh(g.clone(),m.clone());
+				abt.height = 6.63;
+				scene.add(abt);
+
+				basePoint = new THREE.Vector3(52.206, 83.724, 27.714);
+				direction = new THREE.Vector3(-0.049, -0.125, -0.99).negate();
+				// TODO fix this
+				basePoint = geometryUtils.movePointOverDir(basePoint, direction, -0.335);
+
+				// add helpers
+				var sp = new THREE.SphereGeometry(0.5,8,8);
+				var mp = new THREE.MeshLambertMaterial({color:'red'});
+				var bp = new THREE.Mesh(sp,mp);
+				bp.position.copy(basePoint);
+				scene.add(bp);
+				var ah = new THREE.ArrowHelper(direction, basePoint, 50, 'yellow');
+				scene.add(ah);
+
+				controls.target.copy(basePoint);
+			})
 
 			renderer.setClearColor( 0xdddddd, 1);
 
@@ -98,13 +129,12 @@
 			// key function :
 			// it stretches meshes on a plane defined by a point and mesh main axis
 
-			function stretchIt(mesh, point, sf, type, cb){
+			function stretchIt(mesh, point, sf, l, type, cb){
 				var verts = mesh.original.geometry.attributes.position.array.slice();
-				mesh.geometry.computeBoundingBox();
-				var bb = mesh.geometry.boundingBox;
-				var h = bb.max.y - bb.min.y;
-				var l = Math.abs(bb.max.y - bb.min.y);
-
+				// mesh.geometry.computeBoundingBox();
+				// var bb = mesh.geometry.boundingBox;
+				// var l = Math.abs(bb.max.y - bb.min.y);
+				
 				if(type == 'parabolic') {
 					var a1 = (1-sf) / ((l**2)/4 - point.y*l + point.y**2);
 					var b1 = -2*a1*point.y;
@@ -116,11 +146,17 @@
 				else if (type == 'linear') {
 					var a1 = a2 = 0;
 
-					var b1 = (1-sf) / (l/2 - point.y);
-					var c1 = -(point.y - sf*l/2) / (l/2 - point.y);
+					var b1 = (1-sf) / (l - point.y);
+					var c1 = (sf*l - point.y) / (l - point.y);
+					console.log(b1, c1)
 
-					var b2 = (1-sf) / -(l/2 + point.y);
-					var c2 = -(point.y + sf*l/2) / -(l/2 + point.y);
+					// var b2 = (1-sf) / -(l + point.y);
+					// var c2 = -(point.y + sf*l) / -(l + point.y);
+					// console.log(b2, c2)
+
+					var b2 = (sf-1) / point.y;
+					var c2 = 1;
+					console.log(b2, c2)
 				}
 				else {
 					console.warn('no matching type');
@@ -155,6 +191,7 @@
 					}
 					return v;
 				})
+				console.log(a1*(y**2) + b1*y + c1, a2*(y**2) + b2*y + c2)
 				mesh.geometry.attributes.position.array = strVerts.slice();
 				mesh.geometry.attributes.position.needsUpdate = true;
 				// cb(mesh);
@@ -166,18 +203,25 @@
 				// move to origin
 				var quaternion = new THREE.Quaternion().setFromUnitVectors(direction, new THREE.Vector3(0,1,0));
 				var rotMat = new THREE.Matrix4().makeRotationFromQuaternion(quaternion);
-				var matrix = geometryUtils.translateAxisMatrix(direction, cylHeight/2 + point.length());
+				mesh.geometry.computeBoundingBox();
+				mesh.original.geometry.computeBoundingBox();
+				var h = abt.height;
+				var matrix = new THREE.Matrix4().makeTranslation(-point.x, -point.y, -point.z);
+				// var matrix = geometryUtils.translateAxisMatrix(direction, h/2 + point.length());
 				matrix.premultiply(rotMat);
 				mesh.geometry.applyMatrix(matrix);
 				mesh.original.geometry.applyMatrix(matrix);
-				// // stretch
-				var bottom = new THREE.Vector3(0, -cylHeight/2, 0);
-				var top    = new THREE.Vector3(0, cylHeight/2, 0);
-				// correction to avoid mesh distortion on top
+				// stretch
+				var bottom = new THREE.Vector3(0, 0, 0);
+				var top    = new THREE.Vector3(0, h, 0);
+				// corrections to avoid mesh distortion on top
 				s = s == 1 ? 1.01 : s;
+				s = s == 0 ? -0.01 : s;
+				console.log('>>>>>>> s', s)
 				var center = new THREE.Vector3().lerpVectors(bottom, top, s);
-				var stretched = stretchIt(mesh, center, sf, type);
-				// // put back in position
+
+				var stretched = stretchIt(mesh, center, sf, h, type);
+				// put back in position
 				var inverseMatrix = new THREE.Matrix4().getInverse(matrix);
 				stretched.geometry.applyMatrix(inverseMatrix);
 				stretched.original.geometry.applyMatrix(inverseMatrix);
@@ -190,12 +234,11 @@
 			}
 
 			function scaleAsymmetric(mesh, point, axis, sf){
-				mesh.original.geometry.computeBoundingBox();
 
 				// move to origin
 				var quaternion    = new THREE.Quaternion().setFromUnitVectors(axis, new THREE.Vector3(0,1,0));
 				var rotMatrix     = new THREE.Matrix4().makeRotationFromQuaternion(quaternion);
-				var originMatrix  = geometryUtils.translateAxisMatrix(axis, point.length());
+				var originMatrix  = new THREE.Matrix4().makeTranslation(-point.x, -point.y, -point.z);
 				var scalingMatrix = new THREE.Matrix4().makeScale(1,sf,1);
 				var backPosMatrix = new THREE.Matrix4().getInverse(originMatrix);
 				var quaternion2   = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), axis);
@@ -223,7 +266,7 @@
 			gui.add(content, 'type', ['linear', 'parabolic'])
 				.onChange(function(v){
 					console.time('stretch')
-					applyStretch(cylinder, basePoint, direction, content.position, content.stretch, v);
+					applyStretch(abt, basePoint, direction, content.position, content.stretch, v);
 					content.type = v;
 				})
 				.onFinishChange(function(){
@@ -233,7 +276,7 @@
 				.onChange(function(v){
 					controls.enabled = false;
 					console.time('stretch')
-					applyStretch(cylinder, basePoint, direction, content.position, v, content.type);
+					applyStretch(abt, basePoint, direction, content.position, v, content.type);
 					content.stretch = v;
 				})
 				.onFinishChange(function(){
@@ -243,7 +286,7 @@
 				.onChange(function(v){
 					controls.enabled = false;
 					console.time('stretch')
-					applyStretch(cylinder, basePoint, direction, v, content.stretch, content.type);
+					applyStretch(abt, basePoint, direction, v, content.stretch, content.type);
 					content.position = v;
 				})
 				.onFinishChange(function(){
@@ -253,7 +296,7 @@
 				.onChange(function(v){
 					controls.enabled = false;
 					console.time('stretch')
-					scaleAsymmetric(cylinder, basePoint, direction, v, content.type);
+					scaleAsymmetric(abt, basePoint, direction, v, content.type);
 					content.scaleH = v;
 				})
 				.onFinishChange(function(){
