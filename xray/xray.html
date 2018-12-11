@@ -3,9 +3,9 @@
 
 <head>
     <title>X-ray</title>
-    <script src="js/three.min.js"></script>
-    <script src="js/three/js/loaders/OBJLoader.js"></script>
-    <script src="js/three/js/loaders/ColladaLoader.js"></script>
+    <script src="../libs/three.min.js"></script>
+    <script src="../libs/STLLoader.js"></script>
+    <!-- <script src="js/three/js/loaders/ColladaLoader.js"></script> -->
 
     <script id="vertexShader" type="x-shader/x-vertex">
         uniform float p;
@@ -71,25 +71,12 @@ window.addEventListener('load', function () {
         depthWrite: false
     });
 
-    var loader = new THREE.ColladaLoader();
-    loader.options.convertUpAxis = true;
-    loader.load('assets/woman.dae', function (collada) {
-        dae = collada.scene;
-
-        dae.traverse( function ( child ) {
-
-            if (child instanceof THREE.Mesh) {
-                child.material = customMaterial;
-            }
-
-        } );
-
-        dae.position.y = 0;
-        dae.scale.x = 0.2;
-        dae.scale.y = 0.2;
-        dae.scale.z = 0.2;
-        human = dae;
-        scene.add(human);
+    var loader = new THREE.STLLoader();
+    // loader.load('/home/mattia/Desktop/sandbox/bone.stl', function(geometry_) {
+    loader.load('../bone.stl', function(geometry_) {
+      var geometry = new THREE.Geometry().fromBufferGeometry(geometry_);
+      var skull = new THREE.Mesh(geometry, customMaterial);
+      scene.add(skull)
     });
 
     function resize() {

@@ -154,13 +154,11 @@ void main(void) {
   //   finalValue.a = 0.0;
   // }
 
-  
-
-  if (vPos.x > uVec3Array[0].x && vPos.x < uVec3Array[1].x){
-    if (vPos.y > uVec3Array[0].y && vPos.y < uVec3Array[1].y){
-      finalValue.a = 0.75;
-    }
-  }
+  // if (vPos.x > uVec3Array[0].x && vPos.x < uVec3Array[1].x){
+  //   if (vPos.y > uVec3Array[0].y && vPos.y < uVec3Array[1].y){
+  //     finalValue.a = 0.75;
+  //   }
+  // }
 
   if (finalValue.a > 0.7){
     finalValue.r = 1.0;
