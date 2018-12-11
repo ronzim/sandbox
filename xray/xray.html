@@ -43,18 +43,24 @@
 <script>
 window.addEventListener('load', function () {
     var human;
+    const TrackballControls = require('../libs/TrackballControls.js');
 
     var $ = document.querySelector.bind(document);
 
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
     var renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
-
+    var controls = new THREE.TrackballControls(camera);
+    controls.rotateSpeed = 2.0;
+    controls.update();
     renderer.setClearColor(0x000000, 1.0);
 
     lookAt = scene.position;
     lookAt.y = 15;
+    // lookAt.x = 15;
     camera.lookAt(lookAt);
+    console.log(lookAt)
+    camera.position.set(80,0,50)
 
     document.body.appendChild(renderer.domElement);
 
@@ -77,6 +83,7 @@ window.addEventListener('load', function () {
       var geometry = new THREE.Geometry().fromBufferGeometry(geometry_);
       var skull = new THREE.Mesh(geometry, customMaterial);
       scene.add(skull)
+      console.log(skull)
     });
 
     function resize() {
@@ -95,16 +102,25 @@ window.addEventListener('load', function () {
 
         resize();
 
-        camera.position.x = -20 * (Math.cos(time));
-        camera.position.z = (20 * (Math.sin(time)));
-        camera.position.y = 20;
+        // camera.position.x = -20 * (Math.cos(time));
+        // camera.position.z = (20 * (Math.sin(time)));
+        // camera.position.y = 20;
 
-        camera.lookAt(lookAt);
+        // camera.lookAt(lookAt);
+        // controls.update(0.5);
 
         renderer.render(scene, camera);
         requestAnimationFrame(render);
     }
     requestAnimationFrame(render);
+
+    // function render() {
+    //   requestAnimationFrame( render );
+    //   controls.update(0.5);
+    //   renderer.render( scene, camera );
+    // }
+    //
+    // render();
 
 });
 </script>

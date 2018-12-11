@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Test AMI</title>
+  </head>
+
+  <style>
+    *{
+      font-family: 'Roboto', sans-serif;
+      outline: none;
+    }
+
+    #viewer {
+      background-color: #212121;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      top: 70px;
+      height: calc(100% - 70px);
+      position: absolute;
+      width: 100%;
+      overflow:hidden;
+    }
+
+    #orientation {
+      background-color: #212121;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      position: absolute;
+      width: 50%;
+      height: 50%;
+      overflow:hidden;
+    }
+
+    /*#r0, #r1, #r2, #r3 {
+      background-color: #212121;
+      position: absolute;
+      width: 50%;
+      height: 50%;
+      overflow:hidden;
+    }*/
+
+    #r0 {
+      background-color: #212121;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      overflow:hidden;
+    }
+
+    #r0, #r1 {
+      top: 0;
+    }
+
+    #r2, #r3 {
+      bottom: 0;
+    }
+
+    #r0, #r2 {
+      left: 0;
+    }
+
+    #r1, #r3 {
+      right: 0;
+    }
+
+    #orientation {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .direction {
+      z-index: 1;
+      color: #fff;
+      text-transform: uppercase;
+      font-size: 16px;
+      position: absolute;
+      margin: 14px;
+      padding: 4px;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      text-align: center;
+      background-color: rgba(0, 0, 0, .3);
+    }
+
+    #top {
+      top: 24px;
+    }
+
+    #bottom {
+      bottom: 0;
+    }
+
+    #left {
+      left: 0;
+    }
+
+    #right {
+      right: 0;
+    }
+
+    #my-gui-container {
+      position: fixed;
+      top: 30px;
+      right: 20px;
+      z-index:1;
+    }
+
+    #my-lut-container {
+      position: fixed;
+      left: 50%;
+      transform: translate(-50%, 0);
+      z-index: 1;
+      color: #F9F9F9;
+      display: flex;
+    }
+
+    #my-lut-container > #my-lut-canvases {
+      position: relative;
+    }
+
+    #my-lut-min {
+      margin-right: 10px;
+    }
+
+    #my-lut-max {
+      margin-left: 10px;
+    }
+
+    #my-lut-container > #my-lut-canvases > :first-child {
+      background: repeating-linear-gradient(-45deg, #353535, #353535 5px, black 5px, black 10px);
+    }
+
+    #my-lut-container > #my-lut-canvases > :nth-child(2) {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .big{
+      font-size:60px;
+    }
+
+    .medium{
+      font-size:40px;
+    }
+
+    .small{
+      font-size:30px;
+    }
+
+    .small{
+      font-size:20px;
+    }
+  </style>
+
+  <body>
+    <!-- home page -->
+    <div id="home-container">
+      <div id="buttons">
+        <button type="button" id="buttoninput">Dicom<br/>Nifti<br/>Nrrd</button>
+        <input id="filesinput" type="file" multiple>
+      </div>
+    </div>
+
+    <!-- the container for the renderers -->
+    <div id="my-gui-container"></div>
+    <div id="my-lut-container">
+      <div id="my-lut-canvases"></div>
+    </div>
+
+    <div id="viewer">
+      <div id="r0"></div>
+      <!-- <div id="r1" class="renderer"></div>
+      <div id="r2" class="renderer"></div>
+      <div id="r3" class="renderer"></div> -->
+    </div>
+  </body>
+
+  <script src="libs/three.min.js"></script>
+  <script src="libs/DragControls.js"></script>
+  <script src="libs/TrackballControls.js"></script>
+  <!-- <script src="https://cdn.rawgit.com/dataarts/dat.gui/master/build/dat.gui.min.js"></script> -->
+  <script>
+    require("./renderer_xray.js");
+  </script>
+</html>
