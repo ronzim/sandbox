@@ -10,7 +10,10 @@ var line = 0;
 console.time('parsing');
 
 parser.on('data', function (data) {
-  console.log('Got line', line++);
+  line++;
+  if (line % 1000 == 0){
+    console.log('Got line', line);
+  }
   allData.push(data);
 })
 
@@ -22,7 +25,7 @@ parser.on('end', function () {
 })
 
 // var readStream = fs.createReadStream('./logs/30_nov_18.log.json');
-var readStream = fs.createReadStream('/Users/orobix/Desktop/oven/logs/14_dec_18.log.json');
+var readStream = fs.createReadStream('/Users/orobix/Desktop/oven/logs/13_dec_18.log.json');
 
 // readStream.pipe(process.stdout);
 readStream.on('data', function(data){
@@ -55,7 +58,8 @@ function extract(){
   var hasGeneral = _.filter(allData, d => d.context.tags[0] == 'general');
   var hasNotLineStatus = _.filter(hasGeneral, d => (!d.args[0].includes('lineStatus') && !d.args[0].includes('resetNeeded')));
   console.log('-----------------------')
-  var logsLines = _.pluck(hasNotLineStatus, 'argsString');
+  // var logsLines = _.pluck(hasNotLineStatus, 'argsString');
+  var logsLines = _.pluck(hasNotLineStatus, 'message');
   var logsTs = _.pluck(hasNotLineStatus, ['context', 'time']);
   // console.log('----')
   console.log(hasNotLineStatus);
@@ -90,6 +94,9 @@ function display(x){
     var line = i.toString() + '<br>';
     div.innerHTML += line;
   })
+
+  div.innerHTML += '-------------------- END ---------------------';
+
 }
 
 function analyze(lines){
@@ -98,6 +105,7 @@ function analyze(lines){
     'supermain', // killing
     'cobotRepositioning', // reset
     'startRequest', // startButton (UI)
+    'endOfBin observer 0 >> 1'
   ]
 
   for (k in keywords){
