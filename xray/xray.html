@@ -3,9 +3,9 @@
 
 <head>
     <title>X-ray</title>
-    <script src="js/three.min.js"></script>
-    <script src="js/three/js/loaders/OBJLoader.js"></script>
-    <script src="js/three/js/loaders/ColladaLoader.js"></script>
+    <script src="../libs/three.min.js"></script>
+    <script src="../libs/STLLoader.js"></script>
+    <!-- <script src="js/three/js/loaders/ColladaLoader.js"></script> -->
 
     <script id="vertexShader" type="x-shader/x-vertex">
         uniform float p;
@@ -43,18 +43,24 @@
 <script>
 window.addEventListener('load', function () {
     var human;
+    const TrackballControls = require('../libs/TrackballControls.js');
 
     var $ = document.querySelector.bind(document);
 
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
     var renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
-
+    var controls = new THREE.TrackballControls(camera);
+    controls.rotateSpeed = 2.0;
+    controls.update();
     renderer.setClearColor(0x000000, 1.0);
 
     lookAt = scene.position;
     lookAt.y = 15;
+    // lookAt.x = 15;
     camera.lookAt(lookAt);
+    console.log(lookAt)
+    camera.position.set(80,0,50)
 
     document.body.appendChild(renderer.domElement);
 
@@ -71,25 +77,13 @@ window.addEventListener('load', function () {
         depthWrite: false
     });
 
-    var loader = new THREE.ColladaLoader();
-    loader.options.convertUpAxis = true;
-    loader.load('assets/woman.dae', function (collada) {
-        dae = collada.scene;
-
-        dae.traverse( function ( child ) {
-
-            if (child instanceof THREE.Mesh) {
-                child.material = customMaterial;
-            }
-
-        } );
-
-        dae.position.y = 0;
-        dae.scale.x = 0.2;
-        dae.scale.y = 0.2;
-        dae.scale.z = 0.2;
-        human = dae;
-        scene.add(human);
+    var loader = new THREE.STLLoader();
+    // loader.load('/home/mattia/Desktop/sandbox/bone.stl', function(geometry_) {
+    loader.load('../bone.stl', function(geometry_) {
+      var geometry = new THREE.Geometry().fromBufferGeometry(geometry_);
+      var skull = new THREE.Mesh(geometry, customMaterial);
+      scene.add(skull)
+      console.log(skull)
     });
 
     function resize() {
@@ -108,16 +102,25 @@ window.addEventListener('load', function () {
 
         resize();
 
-        camera.position.x = -20 * (Math.cos(time));
-        camera.position.z = (20 * (Math.sin(time)));
-        camera.position.y = 20;
+        // camera.position.x = -20 * (Math.cos(time));
+        // camera.position.z = (20 * (Math.sin(time)));
+        // camera.position.y = 20;
 
-        camera.lookAt(lookAt);
+        // camera.lookAt(lookAt);
+        // controls.update(0.5);
 
         renderer.render(scene, camera);
         requestAnimationFrame(render);
     }
     requestAnimationFrame(render);
+
+    // function render() {
+    //   requestAnimationFrame( render );
+    //   controls.update(0.5);
+    //   renderer.render( scene, camera );
+    // }
+    //
+    // render();
 
 });
 </script>

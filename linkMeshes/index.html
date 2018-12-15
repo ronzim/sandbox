@@ -130,12 +130,12 @@
 					let m = new THREE.MeshBasicMaterial({color: new THREE.Color(b)})
 					let point = new THREE.Mesh(s,m);
 					point.position.set(brushVerts[b], brushVerts[b+1], brushVerts[b+2]);
-					scene.add(point);
+					// scene.add(point);
 				}
 
 				var bm = new THREE.MeshBasicMaterial({color: 0x006666, side: THREE.DoubleSide, wireframe: true, transparent: true, opacity: 0.8});
 				var brush = new THREE.Mesh(bg,bm);
-				scene.add(brush);
+				// scene.add(brush);
 			})
 
 			// load abt
@@ -147,7 +147,7 @@
 				// geometry.applyMatrix(new THREE.Matrix4().makeScale(5,5,5))
 				allAbtVerts = geometry.attributes.position.array;
 				var abt = new THREE.Mesh(geometry, mat);
-				scene.add(abt);
+				// scene.add(abt);
 
 				for (var i=0; i<allAbtVerts.length; i+=3){
 				// for (var i=0; i<0; i+=3){

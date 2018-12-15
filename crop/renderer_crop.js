@@ -245,8 +245,8 @@ initializeData = function(_files) {
   }
   else{
     var fs = require('fs-extra');
-    var dir = '/Users/orobix/Desktop/DICOM/DICOM CASO GUIDATA/BOCCONFRANCESCA_3_15626_40/CT_mpleSeries_6784_2017030909996/';
-    // var dir = '/home/mattia/sandbox/material/DICOM/';
+    // var dir = '/Users/orobix/Desktop/DICOM/DICOM CASO GUIDATA/BOCCONFRANCESCA_3_15626_40/CT_mpleSeries_6784_2017030909996/';
+    var dir = '/home/mattia/sandbox/material/DICOM/';
     var files_ = fs.readdirSync(dir);
     // console.log(files_);
     files_ = files_.filter(f => f[0] !== '.');

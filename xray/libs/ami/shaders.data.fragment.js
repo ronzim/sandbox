@@ -1,4 +1,4 @@
-var shadersInterpolation = require('./shaders.interpolation.js').shadersInterpolation;
+var shadersInterpolation = require('./shaders.interpolation').shadersInterpolation;
 
 class ShadersFragment {
   // pass uniforms object
@@ -14,8 +14,8 @@ class ShadersFragment {
       this.main();
     }
 
-    let content = '';
-    for (let property in this._functions) {
+    var content = '';
+    for (var property in this._functions) {
       content += this._functions[property] + '\n';
     }
 
@@ -23,9 +23,9 @@ class ShadersFragment {
   }
 
   uniforms() {
-    let content = '';
-    for (let property in this._uniforms) {
-      let uniform = this._uniforms[property];
+    var content = '';
+    for (var property in this._uniforms) {
+      var uniform = this._uniforms[property];
       content += `uniform ${uniform.typeGLSL} ${property}`;
 
       if (uniform && uniform.length) {
@@ -41,9 +41,6 @@ class ShadersFragment {
   main() {
     // need to pre-call main to fill up the functions list
     this._main = `
-varying float opacity;
-varying float flag;
-
 void main(void) {
 
   // draw border if slice is cropped
@@ -86,12 +83,14 @@ void main(void) {
       normalizedIntensity*uRescaleSlopeIntercept[0] + uRescaleSlopeIntercept[1];
 
     float windowMin = uWindowCenterWidth[0] - uWindowCenterWidth[1] * 0.5;
+    float windowMax = uWindowCenterWidth[0] + uWindowCenterWidth[1] * 0.5;
     normalizedIntensity =
       ( normalizedIntensity - windowMin ) / uWindowCenterWidth[1];
 
     dataValue.r = dataValue.g = dataValue.b = normalizedIntensity;
     dataValue.a = 1.0;
   }
+
   // Apply LUT table...
   //
   if(uLut == 1){
@@ -132,42 +131,7 @@ void main(void) {
     dataValue.a = 1.;
   }
 
-  // gl_FragColor = dataValue;
-
-  intensity = 0.7;
-  vec4 finalValue = vec4(dataValue.r, dataValue.g, dataValue.b, intensity);
-  // if (dataValue.r < 0.1 || dataValue.g < 0.1 || dataValue.b < 0.1){
-  //   finalValue.r = 1.0;
-  //   // finalValue.g = 0.0;
-  //   // finalValue.b = 0.0;
-  //   finalValue.a = 1.0;
-  // }
-  // else{
-  //   finalValue.a = (finalValue.a + opacity)/2.0;
-  // }
-
-  // float grayScale = 0.30*finalValue.r + 0.59*finalValue.g + 0.11*finalValue.b;
-  // if (grayScale > 0.3){
-  //   finalValue.a = grayScale;
-  // }
-  // else{
-  //   finalValue.a = 0.0;
-  // }
-
-  // if (vPos.x > uVec3Array[0].x && vPos.x < uVec3Array[1].x){
-  //   if (vPos.y > uVec3Array[0].y && vPos.y < uVec3Array[1].y){
-  //     finalValue.a = 0.75;
-  //   }
-  // }
-
-  if (finalValue.a > 0.7){
-    finalValue.r = 1.0;
-    finalValue.g = 0.0;
-    finalValue.b = 0.0;
-  }
-  // finalValue.a = opacity;
-
-  gl_FragColor = finalValue;
+  gl_FragColor = dataValue;
 
     // if on edge, draw line
   // float xPos = gl_FragCoord.x/512.;
@@ -182,7 +146,7 @@ void main(void) {
   }
 
   compute() {
-    let shaderInterpolation = '';
+    var shaderInterpolation = '';
     // shaderInterpolation.inline(args) //true/false
     // shaderInterpolation.functions(args)
 
