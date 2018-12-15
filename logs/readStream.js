@@ -24,8 +24,8 @@ parser.on('end', function () {
   extract();
 })
 
-// var readStream = fs.createReadStream('./logs/30_nov_18.log.json');
-var readStream = fs.createReadStream('/Users/orobix/Desktop/oven/logs/13_dec_18.log.json');
+var readStream = fs.createReadStream('./logs/30_nov_18.log.json');
+// var readStream = fs.createReadStream('/Users/orobix/Desktop/oven/logs/13_dec_18.log.json');
 
 // readStream.pipe(process.stdout);
 readStream.on('data', function(data){
@@ -39,9 +39,18 @@ readStream.on('end', function(){
 function extract(){
   console.log('extraction ------------------------------------- ');
   var sel1 = document.getElementById("sel1");
+
+  // sel1.onSelect = onSelection;
+  // sel1.onClick = onSelection;
+  // sel1.addEventListener('select', onSelection);
+  //
+  // console.log(sel1)
+
   var option = document.createElement("option");
+  // option.addEventListener('select', onSelection);
   option.text = "general";
   sel1.add(option);
+
 
   // console.log(_.filter(allData, d => d.context.location.filename == 'main.js'));
   // console.log(_.pluck(allData, ['context', 'tags']));
@@ -101,6 +110,7 @@ function display(x){
   })
 
   div.innerHTML += '-------------------- END ---------------------';
+  div.innerHTML += '<br>';
 
 }
 
@@ -118,3 +128,5 @@ function analyze(lines){
     console.log(keywords[k], ' : ', c.length);
   }
 }
+
+exports.extract = extract;

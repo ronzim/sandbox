@@ -6,7 +6,11 @@
 <body>
   <!-- <div style="height:10px; width:10px; background:#FFFFFF" id="text"></div>
   <div style="height:600px; width:800px; background:#000000" id="graph"></div> -->
-  <select id='sel1'>
+  <!-- <select id='sel1' onChange='{console.log("change")}' > -->
+  <script>
+    var extract = require('./readStream').extract;
+  </script>
+  <select id='sel1' onChange='{require("./readStream").extract()}' >
     <option value="null"></option>
   </select>
   <select id='sel2'>
@@ -22,7 +26,4 @@
     <div style="height:10800px; width: 1700px; float: left;" id="text"></div>
     <div style="height:10800px; margin-left: 1720px;" id="graph"></div>
   </div>
-  <script>
-    require('./readStream');
-  </script>
 </body>
