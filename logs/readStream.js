@@ -38,6 +38,11 @@ readStream.on('end', function(){
 
 function extract(){
   console.log('extraction ------------------------------------- ');
+  var sel1 = document.getElementById("sel1");
+  var option = document.createElement("option");
+  option.text = "general";
+  sel1.add(option);
+
   // console.log(_.filter(allData, d => d.context.location.filename == 'main.js'));
   // console.log(_.pluck(allData, ['context', 'tags']));
   // var hasValueA = _.filter(allData, d => d.context.tags[0] == 'general');
