@@ -8,22 +8,27 @@
   <div style="height:600px; width:800px; background:#000000" id="graph"></div> -->
   <!-- <select id='sel1' onChange='{console.log("change")}' > -->
   <script>
-    var extract = require('./readStream').extract;
+    require('./readStream');
   </script>
-  <select id='sel1' onChange='{require("./readStream").extract()}' >
-    <option value="null"></option>
-  </select>
-  <select id='sel2'>
-    <option value="null"></option>
-  </select>
-  <select id='sel3'>
-    <option value="null"></option>
-  </select>
-  <select id='sel4'>
-    <option value="null"></option>
-  </select>
-  <div style="height:10800px; width: 100%; overflow: hidden;">
-    <div style="height:10800px; width: 1700px; float: left;" id="text"></div>
-    <div style="height:10800px; margin-left: 1720px;" id="graph"></div>
+  <div id='combos'>
+    <!-- <select id='sel1' onChange='{require("./readStream").extract()}' > -->
+    <select id='sel1'>
+      <option></option>
+    </select>
+    <select id='sel2'>
+      <option></option>
+    </select>
+    <select id='sel3'>
+      <option></option>
+    </select>
+    <select id='sel4'>
+      <option></option>
+    </select>
+  </div>
+  <div style="height:0px; width: 100%; overflow: hidden;">
+    <div style="height:0; width: 1700px; float: left;" id="text"></div>
+    <!-- <div style="height:0px; margin-left: 1720px;" id="graph"></div> -->
+  </div>
+  <div id='graph' style="height:600px; width: 100%;">
   </div>
 </body>
