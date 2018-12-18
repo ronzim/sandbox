@@ -12,10 +12,10 @@ var line = 0;
 // tag
 // module
 
-var file = "./logs/13_dec_18.log.json";
+var file = "./logs/12_dec_18.log.json";
 var baseDate = file.split("/")[2].split(".")[0].replace(/_/g, "-");
-var dateStart = new Date(baseDate).setHours(8);
-var dateEnd = new Date(baseDate).setHours(10);
+var dateStart = new Date(baseDate).setHours(0);
+var dateEnd = new Date(baseDate).setHours(23);
 
 var filters = {
   sel1 : {
@@ -64,7 +64,10 @@ window.onload = function(){
   // readStream.pipe(process.stdout);
   readStream.on('data', function(data){
     // console.log(data.toString('UTF-8'));
-    parser.write(data.toString('UTF-8'));
+    try{
+      parser.write(data.toString('UTF-8'));
+    }
+    catch(err){console.log(err)}
   });
   readStream.on('end', function(){
     parser.end();
@@ -124,7 +127,7 @@ function extract(){
   var hasModule = filters.sel2.value === null ? hasTag : _.filter(hasTag, d => (d.context));
   // TODO remove this
   hasModule = _.filter(hasModule, d => (!d.args[0].includes('lineStatus') && !d.args[0].includes('resetNeeded')));
-  console.log('-----------------------')
+  console.log('-----------------------', hasHour.length, hasTag.length, hasModule.length)
 
   var logsLines = _.pluck(hasModule, 'message');
   var logsTs = _.pluck(hasModule, ['context', 'time']);
@@ -138,6 +141,8 @@ function extract(){
 }
 
 function prepareGraph(){
+
+  // get pcs number
   var data = _.filter(allData, function(d){
     if (d.args.length<2) {
       return false;
@@ -149,23 +154,46 @@ function prepareGraph(){
       return false;
     }
   });
+
   var data_dx = _.filter(data, d => d.context.location.filename == 'flowControl_urDx.js');
   var data_sx = _.filter(data, d => d.context.location.filename == 'flowControl_urSx.js');
   var ts_dx = _.pluck(data_dx, ['context', 'time']).map(a => new Date(a));
   var ts_sx = _.pluck(data_sx, ['context', 'time']).map(a => new Date(a));
   var nop_dx = _.map(data_dx, (d,n) => n);
   var nop_sx = _.map(data_sx, (d,n) => n);
-  graph(ts_dx, nop_dx, ts_sx, nop_sx);
+  console.log('tot pcs: ', data.length)
+
+  // get stops
+  var data_stops = _.filter(allData, (d => (d.message.includes("stopRequest"))));
+  var ts_stops = _.pluck(data_stops, ['context', 'time']).map(a => new Date(a));
+  var nop_stops = _.map(ts_stops, (t) => getNearestTSindex(ts_sx, t)); // get nearest pc ts (just for a better visualization)
+  console.log(nop_stops)
+  graph(ts_dx, nop_dx, ts_sx, nop_sx, ts_stops, nop_stops);
+
+  // get killings
+  var data_kill = _.filter(allData, (d => (d.message.includes("supermain"))));
+  var ts_kill = _.pluck(data_kill, ['context', 'time']).map(a => new Date(a));
+  var nop_kill = _.map(ts_kill, (t) => getNearestTSindex(ts_sx, t)); // get nearest pc ts (just for a better visualization)
+  console.log(nop_kill)
+  graph(ts_dx, nop_dx, ts_sx, nop_sx, ts_stops, nop_stops, ts_kill, nop_kill);
+
+
+  getWorkingStats(_.pluck(data, ['context', 'time']).map(a => new Date(a)));
 }
 
-function graph(x1, y1, x2, y2){
+function getNearestTSindex(tsArray, val){
+  return _.findIndex(tsArray, (t,k) => val>t && val<tsArray[k+1]);
+}
+
+function graph(x1, y1, x2, y2, x3, y3, x4, y4){
 
   var traceSx = {
     x: x1,
     y: y1,
     mode: 'markers',
     type: 'scatter',
-    marker: {size: 1}
+    name: 'urDx',
+    marker: {size: 3}
   };
 
   var traceDx = {
@@ -173,10 +201,29 @@ function graph(x1, y1, x2, y2){
     y: y2,
     mode: 'markers',
     type: 'scatter',
-    marker: {size: 1}
+    name: 'urSx',
+    marker: {size: 3}
   };
 
-  var data = [traceDx, traceSx];
+  var traceStops = {
+    x: x3,
+    y: y3,
+    mode: 'markers',
+    type: 'scatter',
+    name: 'stops',
+    marker: {size: 6}
+  };
+
+  var traceKill = {
+    x: x4,
+    y: y4,
+    mode: 'markers',
+    type: 'scatter',
+    name: 'kill',
+    marker: {size: 6}
+  };
+
+  var data = [traceDx, traceSx, traceStops, traceKill];
 
   Plotly.newPlot('graph', data);
 }
@@ -203,13 +250,35 @@ function analyze(lines){
     'supermain', // killing
     'cobotRepositioning', // reset
     'startRequest', // startButton (UI)
-    'endOfBin observer 0 >> 1'
+    'endOfBin observer 0 >> 1',
+    'stopRequest'
   ]
 
   for (k in keywords){
     var c = _.filter(lines, l => l.includes(keywords[k]));
     console.log(keywords[k], ' : ', c.length);
   }
+}
+
+function getWorkingStats(ts){
+  console.log(ts.length);
+
+  var diff = _.map(ts, function(t,k){
+    if (k==0) return
+
+    return t - ts[k-1];
+  })
+
+  var over30 = _.filter(diff, d => d>30000 && d<120000)
+  var over120 = _.filter(diff, d => d>120000)
+
+  console.log('stops > 30 sec: ', _.map(over30, o => o / 1000 ).length, _.map(over30, o => o / 1000 ), ' [s]');
+  console.log('stops > 2 min: ', _.map(over120, o => o / 1000 / 60).length, _.map(over120, o => o / 1000 / 60), ' [m]');
+
+  var totStop1 = _.reduce(over30, (a,b) => a+b);
+  var totStop2 = _.reduce(over120, (a,b) => a+b);
+  var totWorkable = ts[ts.length-1] - ts[0];
+  console.log('efficiency:', (totWorkable - (totStop1 + totStop2)) / totWorkable );
 }
 
 exports.extract = extract;
