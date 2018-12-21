@@ -51,22 +51,31 @@ function loadFile(fileName, callback){
     callback();
   });
 
-  // read data
-  console.time('parsing');
-  var readStream = fs.createReadStream(fileName);
-  // var readStream = fs.createReadStream('/Users/orobix/Desktop/oven/logs/13_dec_18.log.json');
+  // check lof file exist
+  var exist = fs.existsSync(fileName);
 
-  // readStream.pipe(process.stdout);
-  readStream.on('data', function(data){
-    // console.log(data.toString('UTF-8'));
-    try{
-      parser.write(data.toString('UTF-8'));
-    }
-    catch(err){console.log(err)}
-  });
-  readStream.on('end', function(){
-    parser.end();
-  });
+  if (exist){
+    // read data
+    console.time('parsing');
+    var readStream = fs.createReadStream(fileName);
+
+    // readStream.pipe(process.stdout);
+    readStream.on('data', function(data){
+      // console.log(data.toString('UTF-8'));
+      try{
+        parser.write(data.toString('UTF-8'));
+      }
+      catch(err){
+        console.log(err)
+      }
+    });
+    readStream.on('end', function(){
+      parser.end();
+    });
+  }
+  else{
+    document.getElementById("loadingbar").innerHTML = " LOG NOT FOUND ";
+  }
 
 }
 
@@ -78,7 +87,7 @@ function apply(){
   document.getElementById("loadingbar").innerHTML = "";
 
   // get inputs
-  var mac = document.getElementById("mac").value;
+  var mac = document.getElementById("mac").checked ? 'carico' : 'scarico';
   console.log('mac', mac);
 
   var date = document.getElementById("calendar").value;
@@ -89,10 +98,15 @@ function apply(){
 
   var fileName = day + '_' + month + '_' + year + '.log' + '.json';
   console.log('fileName', fileName);
-  var path = "./logs/" + fileName; // TODO different paths for each mac
+  var path = "./logs_" + mac + "/" + fileName;
 
   loadFile(path, function(){
-    prepareGraph(new Date(date));
+    if (mac == 'carico'){
+      prepareGraph(new Date(date));
+    }
+    else{
+      prepareGraph_(new Date(date));
+    }
   });
 
 };
@@ -274,6 +288,51 @@ function prepareGraph(baseDate){
   getWorkingStats(_.pluck(data_pcs, ['context', 'time']).map(a => new Date(a)));
 }
 
+function prepareGraph_(baseDate){
+  // filter based on time
+  var dateStart = new Date(baseDate)
+  dateStart.setHours(filters.sel1.value);
+  dateStart.setMinutes(filters.sel2.value);
+  var dateEnd = new Date(baseDate)
+  dateEnd.setHours(filters.sel3.value);
+  dateEnd.setMinutes(filters.sel4.value);
+  var intervalData = _.filter(allData, d => (d.context.time > dateStart && d.context.time < dateEnd))
+  console.log('EXTRACTING FROM', dateStart, 'TO', dateEnd);
+  console.log(allData.length, '>>>', intervalData.length);
+
+  console.log(intervalData);
+
+  // get pcs number
+  var data_cycles = _.filter(intervalData, (d) => d.message.includes("openClamp"));
+  console.log(data_cycles.length);
+
+  // get safetyStatus changes
+  var data_ss = _.filter(intervalData, (d => (d.message.includes('safety status changed'))));
+  var data_sick     = _.filter(data_ss, (d => (d.args[3] == 5)));
+  var data_disable  = _.filter(data_ss, (d => (d.args[3] == 3)));
+  var data_restored = _.filter(data_ss, (d => (d.args[3] == 1)));
+  console.log(data_ss)
+
+  // get general
+  var data_general = _.filter(intervalData, (d => (d.context.tags && d.context.tags[0] == 'general')));
+  console.log(data_general.length);
+
+  // get programs
+  var data_programs = _.filter(intervalData, (d => (d.context.tags && d.context.tags[0] == 'programs')));
+  console.log(data_programs.length);
+
+  var serie_cycles = {
+    data: data_cycles,
+    name: 'cycles',
+    index: true,
+    ts: null
+  }
+
+  graph([
+    serie_cycles
+  ])
+}
+
 function getNearestTSindex(tsArray, val){
   return _.findIndex(tsArray, (t,k) => val>t && val<tsArray[k+1]);
 }
@@ -325,7 +384,27 @@ function graph(series){
     traces.push(trace);
   })
 
-  Plotly.newPlot('graph', traces);
+  var layout = {
+    title: document.getElementById('mac').checked ? "Carico" : "Scarico",
+    xaxis: {
+      title: 'Timestamp',
+      // titlefont: {
+      //   family: 'Courier New, monospace',
+      //   size: 18,
+      //   color: '#7f7f7f'
+      // }
+    },
+    yaxis: {
+      title: document.getElementById('mac').checked ? "Pieces" : "Cycles",
+      // titlefont: {
+      //   family: 'Courier New, monospace',
+      //   size: 18,
+      //   color: '#7f7f7f'
+      // }
+    }
+  };
+
+  Plotly.newPlot('graph', traces, layout);
 
 }
 
