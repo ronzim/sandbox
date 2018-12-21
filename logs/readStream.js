@@ -6,59 +6,54 @@ var fs = require('fs-extra')
 var allData = [];
 var line = 0;
 
-// filters
-// hour (start)
-// hour (end)
-// tag
-// module
-
-var file = "./logs/12_dec_18.log.json";
-var baseDate = file.split("/")[2].split(".")[0].replace(/_/g, "-");
-var dateStart = new Date(baseDate).setHours(0);
-var dateEnd = new Date(baseDate).setHours(23);
+// init default
+window.onload = function(){
+  document.getElementById("calendar").value = new Date().toISOString().slice(0,10);
+  prepareFilters();
+}
 
 var filters = {
   sel1 : {
-    name : 'tag',
-    value : null
-  },
-  sel2 : {
-    name : 'module',
-    value : null
-  },
-  sel3 : {
     name : 'hourStart',
     value : null
   },
-  sel4 : {
+  sel2 : {
     name : 'hourEnd',
+    value : null
+  },
+  sel3 : {
+    name : 'tag',
+    value : null
+  },
+  sel4 : {
+    name : 'module',
     value : null
   }
 };
 
-// parser setup
-var parser = jsonlines.parse();
-parser.on('data', function (data) {
-  line++;
-  if (line % 1000 == 0){
-    console.log('Got line', line);
-  }
-  allData.push(data);
-});
+function loadFile(fileName, callback){
+  // parser setup
+  var parser = jsonlines.parse();
+  parser.on('data', function (data) {
+    line++;
+    if (line % 10000 == 0){
+      console.log('Got line', line);
+      document.getElementById("loadingbar").innerHTML += ">";
+    }
+    allData.push(data);
+  });
 
-parser.on('end', function () {
-  console.timeEnd('parsing');
-  // console.log(allData);
-  // fs.writeJSON('./output.json', allData);
-  prepareFilters(extract);
-  prepareGraph();
-});
+  parser.on('end', function () {
+    console.timeEnd('parsing');
+    document.getElementById("loadingbar").innerHTML += "  DONE!  ";
+    // console.log(allData);
+    // fs.writeJSON('./output.json', allData);
+    callback();
+  });
 
-window.onload = function(){
-
-  // READ DATA
+  // read data
   console.time('parsing');
-  var readStream = fs.createReadStream(file);
+  var readStream = fs.createReadStream(fileName);
   // var readStream = fs.createReadStream('/Users/orobix/Desktop/oven/logs/13_dec_18.log.json');
 
   // readStream.pipe(process.stdout);
@@ -73,6 +68,33 @@ window.onload = function(){
     parser.end();
   });
 
+}
+
+function apply(){
+  // reset data TODO check if new file
+  allData = [];
+
+  // reset loader bar
+  document.getElementById("loadingbar").innerHTML = "";
+
+  // get inputs
+  var mac = document.getElementById("mac").value;
+  console.log('mac', mac);
+
+  var date = document.getElementById("calendar").value;
+  const months = ['gen', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  var day = new Date(date).getDate().toString().length == 2 ? new Date(date).getDate().toString() : '0' + new Date(date).getDate().toString();
+  var month = months[new Date(date).getMonth()];
+  var year = new Date(date).getYear().toString().slice(1);
+
+  var fileName = day + '_' + month + '_' + year + '.log' + '.json';
+  console.log('fileName', fileName);
+  var path = "./logs/" + fileName; // TODO different paths for each mac
+
+  loadFile(path, function(){
+    prepareGraph(new Date(date));
+  });
+
 };
 
 function creatOpt(sel, opt){
@@ -83,34 +105,36 @@ function creatOpt(sel, opt){
 
 function prepareFilters(cb){
 
-  // var comboDiv = document.getElementById("combos");
-  // var select = document.createElement("select");
-  // comboDiv.add(select);
-
   var tags = ['general', 'urSx', 'urDx'];
   var modules = ['superMain', 'main', 'flowControl_urSx', 'flowControl_urDx', 'flowControl_ur10B'];
+  var hours = new Array(24).fill(0).map((n,k) => k);
+  var mins = new Array(60).fill(0).map((n,k) => k);
 
   filters.sel1 = document.getElementById("sel1");
-  tags.forEach(function(t){
+  hours.forEach(function(t){
     creatOpt(filters.sel1, t);
   });
-  filters.sel1.onchange = extract;
 
   filters.sel2 = document.getElementById("sel2");
-  modules.forEach(function(m){
+  mins.forEach(function(m){
     creatOpt(filters.sel2, m);
   });
 
-  // TODO
-  var sel3 = document.getElementById("sel3");
-  sel3.onclick = function(){console.log(sel3.value);};
-  var option = document.createElement("option");
-  option.text = "reboot";
-  sel3.add(option);
+  filters.sel3 = document.getElementById("sel3");
+  hours.forEach(function(m){
+    creatOpt(filters.sel3, m);
+  });
 
-  if(cb){
-    cb();
-  }
+  filters.sel4 = document.getElementById("sel4");
+  mins.forEach(function(m){
+    creatOpt(filters.sel4, m);
+  });
+
+  filters.sel1.value = 0;
+  filters.sel2.value = 0;
+  filters.sel3.value = 23;
+  filters.sel4.value = 59;
+
 }
 
 function extract(){
@@ -140,10 +164,21 @@ function extract(){
 
 }
 
-function prepareGraph(){
+function prepareGraph(baseDate){
+
+  // filter based on time
+  var dateStart = new Date(baseDate)
+  dateStart.setHours(filters.sel1.value);
+  dateStart.setMinutes(filters.sel2.value);
+  var dateEnd = new Date(baseDate)
+  dateEnd.setHours(filters.sel3.value);
+  dateEnd.setMinutes(filters.sel4.value);
+  var intervalData = _.filter(allData, d => (d.context.time > dateStart && d.context.time < dateEnd))
+  console.log('EXTRACTING FROM', dateStart, 'TO', dateEnd);
+  console.log(allData.length, '>>>', intervalData.length);
 
   // get pcs number
-  var data = _.filter(allData, function(d){
+  var data_pcs = _.filter(intervalData, function(d){
     if (d.args.length<2) {
       return false;
     }
@@ -155,85 +190,147 @@ function prepareGraph(){
     }
   });
 
-  var data_dx = _.filter(data, d => d.context.location.filename == 'flowControl_urDx.js');
-  var data_sx = _.filter(data, d => d.context.location.filename == 'flowControl_urSx.js');
-  var ts_dx = _.pluck(data_dx, ['context', 'time']).map(a => new Date(a));
-  var ts_sx = _.pluck(data_sx, ['context', 'time']).map(a => new Date(a));
-  var nop_dx = _.map(data_dx, (d,n) => n);
-  var nop_sx = _.map(data_sx, (d,n) => n);
-  console.log('tot pcs: ', data.length)
+  var data_dx = _.filter(data_pcs, d => d.context.location.filename == 'flowControl_urDx.js');
+  var data_sx = _.filter(data_pcs, d => d.context.location.filename == 'flowControl_urSx.js');
 
   // get stops
-  var data_stops = _.filter(allData, (d => (d.message.includes("stopRequest"))));
-  var ts_stops = _.pluck(data_stops, ['context', 'time']).map(a => new Date(a));
-  var nop_stops = _.map(ts_stops, (t) => getNearestTSindex(ts_sx, t)); // get nearest pc ts (just for a better visualization)
-  console.log(nop_stops)
-  graph(ts_dx, nop_dx, ts_sx, nop_sx, ts_stops, nop_stops);
+  var data_stops = _.filter(intervalData, (d => (d.message.includes("stopRequest"))));
 
   // get killings
-  var data_kill = _.filter(allData, (d => (d.message.includes("supermain"))));
-  var ts_kill = _.pluck(data_kill, ['context', 'time']).map(a => new Date(a));
-  var nop_kill = _.map(ts_kill, (t) => getNearestTSindex(ts_sx, t)); // get nearest pc ts (just for a better visualization)
-  console.log(nop_kill)
-  graph(ts_dx, nop_dx, ts_sx, nop_sx, ts_stops, nop_stops, ts_kill, nop_kill);
+  var data_kill = _.filter(intervalData, (d => (d.message.includes("supermain"))));
 
+  // get safetyStatus changes
+  var data_ss = _.filter(intervalData, (d => (d.message.includes('safety status changed'))));
+  var data_sick     = _.filter(data_ss, (d => (d.args[3] == 5)));
+  var data_disable  = _.filter(data_ss, (d => (d.args[3] == 3)));
+  var data_restored = _.filter(data_ss, (d => (d.args[3] == 1)));
 
-  getWorkingStats(_.pluck(data, ['context', 'time']).map(a => new Date(a)));
+  // var ex_serie = {
+  //   data : data,
+  //   name : 'name',
+  //   index : true/false,
+  //   ts : refer_data_ts
+  // }
+
+  var serie_dx = {
+    data: data_dx,
+    name: 'urDx',
+    index: true,
+    ts: null
+  }
+
+  var serie_sx = {
+    data: data_sx,
+    name: 'urSx',
+    index: true,
+    ts: null
+  }
+
+  var serie_stops = {
+    data: data_stops,
+    name: 'stops',
+    index: false,
+    ts: data_sx
+  }
+
+  var serie_kill = {
+    data: data_kill,
+    name: 'kill',
+    index: false,
+    ts: null
+  }
+
+  var serie_sick = {
+    data: data_sick,
+    name: 'sick',
+    index: false,
+    ts: null
+  }
+
+  var serie_disable = {
+    data: data_disable,
+    name: 'disable',
+    index: false,
+    ts: null
+  }
+
+  var serie_restored = {
+    data: data_restored,
+    name: 'restored',
+    index: false,
+    ts: null
+  }
+
+  graph([
+    serie_dx,
+    serie_sx,
+    serie_stops,
+    // serie_kill,
+    // serie_sick,
+    // serie_disable,
+    // serie_restored
+  ]);
+
+  getWorkingStats(_.pluck(data_pcs, ['context', 'time']).map(a => new Date(a)));
 }
 
 function getNearestTSindex(tsArray, val){
   return _.findIndex(tsArray, (t,k) => val>t && val<tsArray[k+1]);
 }
 
-function graph(x1, y1, x2, y2, x3, y3, x4, y4){
+function graph(series){
+  var traces = [];
 
-  var traceSx = {
-    x: x1,
-    y: y1,
-    mode: 'markers',
-    type: 'scatter',
-    name: 'urDx',
-    marker: {size: 3}
-  };
+  _.each(series, function(s){
+    console.log(s)
+    var ts  = _.pluck(s.data, ['context', 'time']).map(a => new Date(a));
 
-  var traceDx = {
-    x: x2,
-    y: y2,
-    mode: 'markers',
-    type: 'scatter',
-    name: 'urSx',
-    marker: {size: 3}
-  };
+    if (s.index){
+      var nop = _.map(s.data, (d,n) => n);
+    }
+    else{
+      var ts_data = _.pluck(s.ts, ['context', 'time']).map(a => new Date(a));
+      var nop = _.map(ts, (t) => getNearestTSindex(ts_data, t));
+    }
 
-  var traceStops = {
-    x: x3,
-    y: y3,
-    mode: 'markers',
-    type: 'scatter',
-    name: 'stops',
-    marker: {size: 6}
-  };
+    var trace = {
+      x: ts,
+      y: nop,
+      mode: 'markers',
+      type: 'scatter',
+      error_y: s.index ? null : {
+        type: 'constant',
+        value: 200,
+        symmetric: true,
+        width: 3
+      },
+      name: s.name,
+      marker: {size: 3}
+    };
 
-  var traceKill = {
-    x: x4,
-    y: y4,
-    mode: 'markers',
-    type: 'scatter',
-    name: 'kill',
-    marker: {size: 6}
-  };
+    // error_y: {
+    //   type: 'constant',
+    //   value: 0.1,
+    //   color: '#85144B',
+    //   thickness: 1.5,
+    //   width: 3,
+    //   opacity: 1
+    // },
 
-  var data = [traceDx, traceSx, traceStops, traceKill];
+    // type: 'data',
+    // symmetric: false,
+    // array: [0.1, 0.2, 0.1, 0.1],
+    // arrayminus: [0.2, 0.4, 1, 0.2]
 
-  Plotly.newPlot('graph', data);
+    traces.push(trace);
+  })
+
+  Plotly.newPlot('graph', traces);
+
 }
 
 function display(x){
   var div = document.getElementById("text");
-  // _.each(x, function(i, j){
-  //   var line = i.toString() + ', ' + y[j].toString() + '<br>';
-  //   div.innerHTML += line;
-  // })
   _.each(x, function(i){
     var line = i.toString() + '<br>';
     div.innerHTML += line;
@@ -282,3 +379,4 @@ function getWorkingStats(ts){
 }
 
 exports.extract = extract;
+exports.apply = apply;
