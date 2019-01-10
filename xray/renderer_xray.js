@@ -70,9 +70,11 @@ function initRenderer3D(renderObj) {
   renderObj.scene = new THREE.Scene();
 
   // light
-  renderObj.light = new THREE.DirectionalLight(0xffffff, 1);
+  renderObj.light = new THREE.DirectionalLight(0xffffff, 10);
   renderObj.light.position.copy(renderObj.camera.position);
   renderObj.scene.add(renderObj.light);
+  renderObj.ambientLight = new THREE.AmbientLight(0xffffff, 1);
+  renderObj.scene.add(renderObj.ambientLight);
 
   //axis
   var axis = new THREE.AxisHelper(30);
@@ -131,8 +133,8 @@ initializeData = function(_files) {
   }
   else{
     var fs = require('fs-extra');
-    // var dir = '/Users/orobix/Desktop/DICOM/DICOM CASO GUIDATA/BOCCONFRANCESCA_3_15626_40/CT_mpleSeries_6784_2017030909996/';
-    var dir = '/home/mattia/sandbox/material/DICOM/';
+    var dir = '/Users/orobix/Desktop/DICOM/DICOM CASO GUIDATA/BOCCONFRANCESCA_3_15626_40/CT_mpleSeries_6784_2017030909996/';
+    // var dir = '/home/mattia/sandbox/material/DICOM/';
     var files_ = fs.readdirSync(dir);
     console.log(files_);
     files_ = files_.filter(f => f[0] !== '.');
@@ -168,7 +170,8 @@ initializeData = function(_files) {
     r0.stackHelper = new HelpersStack(stack);
     // r0.scene.add(r0.stackHelper);
 
-    loadMc(stack, r0.scene);
+    // loadMc(stack, r0.scene);
+    loadSurfaces(stack, r0.scene, 0);
 
     // ===========================================
     // =========== GUI ===========================
@@ -210,21 +213,79 @@ function readMultipleFiles(evt) {
    initializeData(evt.target.files);
 }
 
-function loadMc(stack, scene){
-  var loader = new STLLoader();
-  // loader.load('/home/mattia/Desktop/sandbox/bone.stl', function(geometry_) {
-  loader.load('../bone.stl', function(geometry_) {
-    var geometry = new THREE.Geometry().fromBufferGeometry(geometry_);
-    console.log('>>>>> DONE');
+var i=0;
+// var fileNames = ['../bone.stl'];
+var path = '/Users/orobix/Desktop/segmentation_layers/'
+var fileNames = [
+                  '150_dec90.stl',
+                  // '175_dec90.stl',
+                  // '200_dec90.stl',
+                  // '225_dec90.stl',
+                  '250_dec90.stl'
+                  // '500.stl',
+                  // '1000.stl',
+                  // '2000.stl'
+                ];
+var completeGeometry = new THREE.Geometry();
+
+function loadSurfaces(stack, scene, i){
+  if (fileNames[i]){
+    console.log('surface', i);
+    var loader = new STLLoader();
+    loader.load(path+fileNames[i], function(geometry_) {
+      console.log(geometry_)
+      var geometry = new THREE.Geometry().fromBufferGeometry(geometry_);
+      console.log('>>>>> from buffer geometry to geometry', geometry_);
+      completeGeometry.merge(geometry);
+      i++;
+      setTimeout(function(){
+        loadSurfaces(stack, scene, i);
+        console.log(completeGeometry)
+      }, 100);
+    });
+  }
+  else{
     setTimeout(function(){
-      geometry.computeVertexNormals();
-      geometry.computeBoundingBox();
-      var mcStackHelper = panorex.initMcStackHelper(stack, geometry);
-      console.log(mcStackHelper);
-      scene.add(mcStackHelper);
-    }, 2000);
-  });
+      loadMc(stack, scene, completeGeometry);
+    }, 100);
+  }
 }
+
+function loadMc(stack, scene, geometry){
+  // console.log('>>>>> from buffer geometry to geometry', geometry_);
+  // var geometry = new THREE.Geometry().fromBufferGeometry(geometry_);
+  setTimeout(function(){
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    var matrix = new THREE.Matrix4();
+    matrix.elements = [-1, 0, 0, 0,
+                        0, -1, 0, 0,
+                        0, 0, 1, 0,
+                        0, 0, 0 ,1 ];
+    geometry.applyMatrix(matrix);
+    var mcStackHelper = panorex.initMcStackHelper(stack, geometry);
+    console.log(mcStackHelper);
+    scene.add(mcStackHelper);
+    console.log(scene);
+  }, 5000);
+}
+
+
+// function loadMc(stack, scene, geometry_){
+//   var loader = new STLLoader();
+//   // loader.load('/home/mattia/Desktop/sandbox/bone.stl', function(geometry_) {
+//   loader.load('../bone.stl', function(geometry_) {
+//     var geometry = new THREE.Geometry().fromBufferGeometry(geometry_);
+//     console.log('>>>>> DONE');
+//     setTimeout(function(){
+//       geometry.computeVertexNormals();
+//       geometry.computeBoundingBox();
+//       var mcStackHelper = panorex.initMcStackHelper(stack, geometry);
+//       console.log(mcStackHelper);
+//       scene.add(mcStackHelper);
+//     }, 2000);
+//   });
+// }
 
 console.log('init data')
 initializeData();

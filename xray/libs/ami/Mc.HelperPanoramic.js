@@ -318,11 +318,11 @@ class HelpersPanoramic extends HelpersMaterialMixin(THREE.Object3D) {
       this._uniforms.uTextureContainer.value = this._textures;
       this._createMaterial({
         transparent : true,
-        opacity : 0.7,
-        wireframe: true,
+        // opacity : 0.7,
+        // wireframe: true,
         // depthWrite : false,
-        // blending: THREE.AdditiveBlending,
-        blending: THREE.NormalBlending,
+        blending: THREE.AdditiveBlending,
+        // blending: THREE.NormalBlending,
         // blending: THREE.NoBlending,
         // blending: THREE.SubtractiveBlending,
         side: THREE.DoubleSide,
