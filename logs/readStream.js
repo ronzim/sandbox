@@ -97,9 +97,8 @@ function apply(){
   var year = new Date(date).getYear().toString().slice(1);
 
   var fileName = day + '_' + month + '_' + year + '.log' + '.json';
-  console.log('fileName', fileName);
-  var path = "./logs_" + mac + "/" + fileName;
-
+  var path = "./logs/logs_" + mac + "/" + fileName;
+  console.log(path);
   loadFile(path, function(){
     if (mac == 'carico'){
       prepareGraph(new Date(date));
@@ -118,7 +117,6 @@ function creatOpt(sel, opt){
 }
 
 function prepareFilters(cb){
-
   var tags = ['general', 'urSx', 'urDx'];
   var modules = ['superMain', 'main', 'flowControl_urSx', 'flowControl_urDx', 'flowControl_ur10B'];
   var hours = new Array(24).fill(0).map((n,k) => k);
@@ -288,6 +286,7 @@ function prepareGraph(baseDate){
   getWorkingStats(_.pluck(data_pcs, ['context', 'time']).map(a => new Date(a)));
 }
 
+// NOT CURRENTLY USED -----------------
 function prepareGraph_(baseDate){
   // filter based on time
   var dateStart = new Date(baseDate)
