@@ -82,6 +82,7 @@ function loadFile(fileName, callback){
 function apply(){
   // reset data TODO check if new file
   allData = [];
+  line = 0;
 
   // reset loader bar
   document.getElementById("loadingbar").innerHTML = "";
@@ -91,7 +92,7 @@ function apply(){
   console.log('mac', mac);
 
   var date = document.getElementById("calendar").value;
-  const months = ['gen', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
   var day = new Date(date).getDate().toString().length == 2 ? new Date(date).getDate().toString() : '0' + new Date(date).getDate().toString();
   var month = months[new Date(date).getMonth()];
   var year = new Date(date).getYear().toString().slice(1);
@@ -249,38 +250,38 @@ function prepareGraph(baseDate){
     data: data_kill,
     name: 'kill',
     index: false,
-    ts: null
+    ts: data_sx
   }
 
   var serie_sick = {
     data: data_sick,
     name: 'sick',
     index: false,
-    ts: null
+    ts: data_sx
   }
 
   var serie_disable = {
     data: data_disable,
     name: 'disable',
     index: false,
-    ts: null
+    ts: data_sx
   }
 
   var serie_restored = {
     data: data_restored,
     name: 'restored',
     index: false,
-    ts: null
+    ts: data_sx
   }
 
   graph([
     serie_dx,
     serie_sx,
     serie_stops,
-    // serie_kill,
-    // serie_sick,
-    // serie_disable,
-    // serie_restored
+    serie_kill,
+    serie_sick,
+    serie_disable,
+    serie_restored
   ]);
 
   getWorkingStats(_.pluck(data_pcs, ['context', 'time']).map(a => new Date(a)));
@@ -340,7 +341,7 @@ function graph(series){
   var traces = [];
 
   _.each(series, function(s){
-    console.log(s)
+    console.log(s.name, s.data.length);
     var ts  = _.pluck(s.data, ['context', 'time']).map(a => new Date(a));
 
     if (s.index){
@@ -436,7 +437,7 @@ function analyze(lines){
 }
 
 function getWorkingStats(ts){
-  console.log(ts.length);
+  console.log('total number of pieces', ts.length);
 
   var diff = _.map(ts, function(t,k){
     if (k==0) return
