@@ -146,7 +146,7 @@ void main(void) {
   //   finalValue.a = (finalValue.a + opacity)/2.0;
   // }
 
-  // float grayScale = 0.30*finalValue.r + 0.59*finalValue.g + 0.11*finalValue.b;
+  float grayScale = 0.30*finalValue.r + 0.59*finalValue.g + 0.11*finalValue.b;
   // if (grayScale > 0.3){
   //   finalValue.a = grayScale;
   // }
@@ -154,18 +154,17 @@ void main(void) {
   //   finalValue.a = 0.0;
   // }
 
-  // if (vPos.x > uVec3Array[0].x && vPos.x < uVec3Array[1].x){
-  //   if (vPos.y > uVec3Array[0].y && vPos.y < uVec3Array[1].y){
-  //     finalValue.a = 0.75;
-  //   }
+  // if (finalValue.a > 0.7){
+  //   finalValue.r = 1.0;
+  //   finalValue.g = 0.0;
+  //   finalValue.b = 0.0;
   // }
 
+  finalValue.a = grayScale;
+
   if (finalValue.a > 0.7){
-    finalValue.r = 1.0;
-    finalValue.g = 0.0;
-    finalValue.b = 0.0;
+    finalValue.a = 1.0;
   }
-  // finalValue.a = opacity;
 
   gl_FragColor = finalValue;
 

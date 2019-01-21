@@ -10,7 +10,12 @@
   <script>
     require('./readStream');
   </script>
+  <input type="radio" name="group1" value="carico" checked="True" id="mac">Carico<br>
+  <input type="radio" name="group1" value="scarico">Scarico<br>
+  Date
+  <input type="date" id='calendar'>
   <div id='combos'>
+    StartHour
     <!-- <select id='sel1' onChange='{require("./readStream").extract()}' > -->
     <select id='sel1'>
       <option></option>
@@ -18,6 +23,8 @@
     <select id='sel2'>
       <option></option>
     </select>
+    <br>
+    EndHour
     <select id='sel3'>
       <option></option>
     </select>
@@ -25,6 +32,17 @@
       <option></option>
     </select>
   </div>
+  <button id='button' onclick='require("./readStream").apply()''>
+    Apply
+  </button>
+
+  <div>
+    <br>
+      <label id='loadingbar'>
+      </label>
+    <br>
+  </div>
+
   <div style="height:0px; width: 100%; overflow: hidden;">
     <div style="height:0; width: 1700px; float: left;" id="text"></div>
     <!-- <div style="height:0px; margin-left: 1720px;" id="graph"></div> -->
