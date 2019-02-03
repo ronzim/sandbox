@@ -37,10 +37,11 @@ def checkPresence(name, drive_list):
         raw_str = drive_name['title'].encode('ascii', 'replace')
         # print raw_str
         # sequence matcher to check for sligtly different strings
-        # res = SequenceMatcher(name, raw_str)
+        res = SequenceMatcher(None, name, raw_str)
         # print(res.ratio())
-        # if (res.ratio() > 0.5):
-        if (raw_str == name):
+        # time.sleep(1)
+        if (res.ratio() > 0.5):
+        # if (raw_str == name):
             # print ('>>>>>>>>>>> match!')
             return True
     return False
