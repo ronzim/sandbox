@@ -120,7 +120,8 @@ def my_hook(d):
         print('Done downloading, now converting ...')
 
 ydl_opts = {
-    'outtmpl' : '/home/mattia/Videos/%(title)s.%(ext)s',
+    'outtmpl' : './Songs/%(title)s.%(ext)s',
+    # 'outtmpl' : './Songs/%(artist)s - %(title)s.%(ext)s',
     'format': 'bestaudio/best',
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
