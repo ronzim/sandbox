@@ -17,7 +17,7 @@
 
 # ROADMAP:
 # fill a song - artist list
-# check each message on arrival
+# check each message on arrival DONE
 # check list for double songs
 
 from __future__ import unicode_literals
@@ -30,7 +30,7 @@ from telethon import events
 from googlesearch import search
 
 # management vars
-all_chat = False
+all_chat = True
 
 #get links from a chat
 def getSongLinks(client):
@@ -96,11 +96,13 @@ def extractLink(string):
 
 def processMsg(strMsg):
     link = extractLink(strMsg);
+    print(link)
     if (link == None):
         return False
     youtube_link = getYoutubeLink(link);
     if (youtube_link == None):
         return False
+    print (youtube_link)
     return youtube_link
 
 # download feature --------------------------
@@ -118,6 +120,7 @@ def my_hook(d):
         print('Done downloading, now converting ...')
 
 ydl_opts = {
+    'outtmpl' : '/home/mattia/Videos/%(title)s.%(ext)s',
     'format': 'bestaudio/best',
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
@@ -141,33 +144,33 @@ client = TelegramClient('session_name', api_id, api_hash).start()
 # RUN DOWNLOADER ON SINGLE INCOMING MESSAGE  =====
 # ================================================
 
-@client.on(events.NewMessage)
-async def handler(event):
-    print (" ------- RECEIVED NEW MESSAGE ------- ")
-    print (event.input_chat.chat_id)
-    print (event.raw_text)
-    if (event.input_chat.chat_id == 328985728 and 'http' in event.raw_text):
-        # if message contains a link
-        youtube_link = processMsg(event.raw_text)
-        print (youtube_link != False)
-        if (youtube_link != False):
-            print ("1")
-            outfile = open('song_links.txt', 'a+')
-            outfile.write(youtube_link + '\n')
-            outfile.write('####################')
-            outfile.close()
-            print ("2")
-            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                print ("3")
-                try:
-                    print ('DOWNLOADING', youtube_link)
-                    ydl.download([youtube_link])
-                    print('downloaded')
-                    # await event.reply('download success')
-                except:
-                    print ('error downloading')
+if (all_chat == False):
+    @client.on(events.NewMessage)
+    async def handler(event):
+        print (" ------- RECEIVED NEW MESSAGE ------- ")
+        print ('chat id: ', event.input_chat.chat_id)
+        print ('raw msg: ', event.raw_text)
+        if (event.input_chat.chat_id == 328985728 and 'http' in event.raw_text):
+            # if message contains a link
+            youtube_link = processMsg(event.raw_text)
+            print ('>>> youtube_link', youtube_link)
+            if (youtube_link != False):
+                outfile = open('song_links.txt', 'a+')
+                outfile.write(youtube_link + '\n')
+                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                    try:
+                        print ('DOWNLOADING', youtube_link)
+                        ydl.download([youtube_link])
+                        outfile.write('DOWNLOAD OK\n')
+                        print('DOWNLOADED!')
+                        await event.reply('download success')
+                    except:
+                        outfile.write('ERROR DOWNLOADING\n')
+                        print ('error downloading')
+                outfile.write('####################')
+                outfile.close()
 
-client.run_until_disconnected()
+    client.run_until_disconnected()
 
 # ================================================
 # RUN DOWNLOADER ON ALL CHAT MESSAGES  ===========
@@ -179,10 +182,12 @@ if (all_chat):
         print('>>> getting dialog', dialog.name)
 
     urls = []
-    # urls = getSongLinks(client)
+    urls = getSongLinks(client)
     outfile = open('song_links.txt', 'a+')
 
     counter = 0
+    ok = 0
+    nok = 0
 
     for entry in urls:
         counter+=1
@@ -196,14 +201,20 @@ if (all_chat):
                     try:
                         print ('DOWNLOADING', youtube_link)
                         ydl.download([youtube_link])
+                        ok+=1
+                        outfile.write('\n# DOWNLOAD OK #\n')
                     except:
                         print ('error, continue')
+                        nok+=1
+                        outfile.write('\n! DOWNLOAD ERROR !\n')
                         continue
 
     outfile.write('####################')
     outfile.close()
     # client.disconnect()
     print (' ### DONE ### ')
+    print (ok, 'ok')
+    print (nok, 'nok')
 
     # just a try
     # for msg in client.iter_messages('Mattia Ronzoni'): # no limits!
