@@ -2,7 +2,7 @@ const geometryUtils = require('./geometryUtils');
 const geometryUtils_ = require('./geometryUtils_intra');
 const _ = require('underscore');
 
-function generate(srcVerts, trgVerts, ln, jolly){
+function init(srcVerts, trgVerts, ln, jolly){
   console.time('generate')
   // spline & sample trgVerts to have equal number of points
   var sampling = geometryUtils_.plainArrayToThreePointsArray(trgVerts);
@@ -53,8 +53,31 @@ function generate(srcVerts, trgVerts, ln, jolly){
   // jolly.add(link);
   // END DEV
 
+  // TODO =============================================================================== TODO //
+  // =========|| a base model should be defined by a data struct based on:  ||================ //
+  // =========|| - srcVerts                                                 ||================ //
+  // =========|| - sampledPoints (eg opposite edge sampling)                ||================ //
+  // =========|| - delta @ s=0.5 to manage flaring                          ||================ //
+  // =========|| - ln (number of layers)                                    ||================ //
+  // TODO =============================================================================== TODO //
+
+  var base = {
+    srcVerts : srcVerts,
+    sampledPoints : sampledPoints,
+    delta : 5,
+    ln : 50
+  }
+
+  return base;
+}
+
+function generate(base, jolly){
+
   // compute ln layers
-  var layers = sampleSpace(srcVerts, sampledPoints, ln);
+  var layers = sampleSpace(base.srcVerts, base.sampledPoints, base.ln);
+  console.log(base)
+  var c1 = geometryUtils.getPointsCentroid(geometryUtils_.plainArrayToThreePointsArray(base.srcVerts));
+  var c2 = geometryUtils.getPointsCentroid(geometryUtils_.plainArrayToThreePointsArray(base.sampledPoints));
 
   // sew each layer with the follower, storing vertices
   var finalVertices = new Float32Array(10000000).fill(99999);
@@ -95,7 +118,7 @@ function generate(srcVerts, trgVerts, ln, jolly){
   var finalBottomVertices = new Float32Array(10000000).fill(99999);
 
   // top
-  var centerTopVerts = new Array(srcVerts.length).fill(0).map(function(e,k){
+  var centerTopVerts = new Array(base.srcVerts.length).fill(0).map(function(e,k){
     switch (k%3){
       case 0: return c1.x;
         break;
@@ -106,7 +129,7 @@ function generate(srcVerts, trgVerts, ln, jolly){
     }
   });
 
-  var topLayers = sampleSpace(srcVerts, centerTopVerts, ln);
+  var topLayers = sampleSpace(base.srcVerts, centerTopVerts, base.ln);
 
   for (var f=0; f<topLayers.length-1; f++){
     var partialTopVertices = sewer(topLayers[f], topLayers[f+1]);
@@ -114,7 +137,7 @@ function generate(srcVerts, trgVerts, ln, jolly){
   }
 
   // bottom
-  var centerBottomVerts = new Array(srcVerts.length).fill(0).map(function(e,k){
+  var centerBottomVerts = new Array(base.srcVerts.length).fill(0).map(function(e,k){
     switch (k%3){
       case 0: return c2.x;
         break;
@@ -125,7 +148,7 @@ function generate(srcVerts, trgVerts, ln, jolly){
     }
   });
 
-  var topLayers = sampleSpace(sampledPoints, centerBottomVerts, ln);
+  var topLayers = sampleSpace(base.sampledPoints, centerBottomVerts, base.ln);
 
   for (var f=0; f<topLayers.length-1; f++){
     var partialBottomVertices = sewer(topLayers[f], topLayers[f+1]);
@@ -150,8 +173,8 @@ function generate(srcVerts, trgVerts, ln, jolly){
 
   var lg = new THREE.BufferGeometry();
   lg.addAttribute( 'position', new THREE.BufferAttribute( completeVertices, 3 ) );
-  // var lm = new THREE.MeshLambertMaterial({flatShading:false, color: 0x0000ff, side: THREE.DoubleSide, wireframe: true, transparent: true, opacity: 0.8});
-  var lm = new THREE.MeshPhongMaterial({flatShading:false, color: 0x0000ff, side: THREE.DoubleSide, wireframe: false, transparent: true, opacity: 0.8});
+  var lm = new THREE.MeshLambertMaterial({flatShading:false, color: 0x0000ff, side: THREE.DoubleSide, wireframe: true, transparent: true, opacity: 0.8});
+  // var lm = new THREE.MeshPhongMaterial({flatShading:false, color: 0x0000ff, side: THREE.DoubleSide, wireframe: false, transparent: true, opacity: 0.8});
   var link = new THREE.Mesh(lg,lm);
 
   console.timeEnd('generate')
@@ -316,3 +339,4 @@ exports.computeEdgeList = computeEdgeList;
 exports.extractBoundaryEdges = extractBoundaryEdges;
 exports.reverse = reverse;
 exports.generate = generate;
+exports.init = init;

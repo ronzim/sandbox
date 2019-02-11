@@ -202,7 +202,8 @@
 
 				computeVerse(brushVerts);
 
-				linker.generate(abtVerts, brushVerts, N, scene);
+				var base = linker.init(abtVerts, brushVerts, N);
+				linker.generate(base, scene);
 				// generate(cylVerts)
 			});
 
