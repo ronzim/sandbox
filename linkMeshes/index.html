@@ -103,7 +103,7 @@
 			// load brush
 			var brushVerts = [];
 
-			fs.readJSON('./linkMeshes/brushedArea.json', function(err, data){
+			fs.readJSON('./brushedArea.json', function(err, data){
 				console.log(data);
 				let verts = new Float32Array(data.vertices);
 				let norms = new Float32Array(data.normals);

@@ -98,7 +98,9 @@ function apply(){
   var year = new Date(date).getYear().toString().slice(1);
 
   var fileName = day + '_' + month + '_' + year + '.log' + '.json';
-  var path = "./logs/logs_" + mac + "/" + fileName;
+  var cwd = process.cwd();
+  var path = cwd + "/logs_" + mac + "/" + fileName;
+  console.log(process.cwd())
   console.log(path);
   loadFile(path, function(){
     if (mac == 'carico'){
@@ -218,6 +220,8 @@ function prepareGraph(baseDate){
   var data_disable  = _.filter(data_ss, (d => (d.args[3] == 3)));
   var data_restored = _.filter(data_ss, (d => (d.args[3] == 1)));
 
+  var data_end_of_bin = _.filter(intervalData, (d => (d.message.includes('endOfBin observer 0 >> 1'))));
+
   // var ex_serie = {
   //   data : data,
   //   name : 'name',
@@ -274,6 +278,13 @@ function prepareGraph(baseDate){
     ts: data_sx
   }
 
+  var serie_end_of_bin = {
+    data: data_end_of_bin,
+    name: 'endOfBin',
+    index: false,
+    ts: data_sx
+  }
+
   graph([
     serie_dx,
     serie_sx,
@@ -281,7 +292,8 @@ function prepareGraph(baseDate){
     serie_kill,
     serie_sick,
     serie_disable,
-    serie_restored
+    serie_restored,
+    serie_end_of_bin
   ]);
 
   getWorkingStats(_.pluck(data_pcs, ['context', 'time']).map(a => new Date(a)));

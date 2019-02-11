@@ -154,16 +154,21 @@ void main(void) {
   //   finalValue.a = 0.0;
   // }
 
-  // if (finalValue.a > 0.7){
+  // finalValue.a = grayScale * 2.0 * opacity;
+  finalValue.a = grayScale;
+
+  // if (finalValue.a > 0.5){
   //   finalValue.r = 1.0;
   //   finalValue.g = 0.0;
   //   finalValue.b = 0.0;
   // }
 
-  finalValue.a = grayScale;
+  // if (finalValue.a > 0.5){
+  //   finalValue.a = 1.0;
+  // }
 
-  if (finalValue.a > 0.7){
-    finalValue.a = 1.0;
+  if (finalValue.a < 0.5){
+    finalValue.a *= opacity;
   }
 
   gl_FragColor = finalValue;
