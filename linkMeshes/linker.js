@@ -64,20 +64,42 @@ function init(srcVerts, trgVerts, ln, jolly){
   var base = {
     srcVerts : srcVerts,
     sampledPoints : sampledPoints,
-    delta : 5,
+    delta : 1,
     ln : 50
   }
-
+  console.log(base)
   return base;
 }
 
-function generate(base, jolly){
+function addFlaring(layers, axis, jolly, amountMax){
+  var layers_tot = layers.length-1;
+  for (var l=0; l<layers.length; l++){
+    var layer = layers[l];
+    var alpha = l<layers_tot/2 ? l/layers_tot : (layers_tot-l)/layers_tot;
+    console.log(l, alpha**2, Math.sqrt(alpha))
+    for (var p=0; p<layer.length; p+=3){
+      var projection = new THREE.Vector3(layer[p], layer[p+1], layer[p+2]).projectOnVector(axis);
+      var dir = new THREE.Vector3(layer[p], layer[p+1], layer[p+2]).sub(projection).normalize();
+      // jolly.add(new THREE.ArrowHelper(dir, new THREE.Vector3(layer[p], layer[p+1], layer[p+2]), 1, 'green'))
+      layer[p]   -= dir.x*Math.sqrt(alpha)*amountMax;
+      layer[p+1] -= dir.y*Math.sqrt(alpha)*amountMax;
+      layer[p+2] -= dir.z*Math.sqrt(alpha)*amountMax;
+    }
+  }
+}
 
-  // compute ln layers
-  var layers = sampleSpace(base.srcVerts, base.sampledPoints, base.ln);
+function generate(base, jolly){
+  console.time('generate')
   console.log(base)
+  // compute ln layers
   var c1 = geometryUtils.getPointsCentroid(geometryUtils_.plainArrayToThreePointsArray(base.srcVerts));
   var c2 = geometryUtils.getPointsCentroid(geometryUtils_.plainArrayToThreePointsArray(base.sampledPoints));
+  var axis = new THREE.Vector3().subVectors(c2,c1).normalize();
+
+  jolly.add(new THREE.ArrowHelper(axis, c1, 30))
+
+  var layers = sampleSpace(base.srcVerts, base.sampledPoints, base.ln);
+  addFlaring(layers, axis, jolly, base.delta);
 
   // sew each layer with the follower, storing vertices
   var finalVertices = new Float32Array(10000000).fill(99999);
@@ -173,8 +195,8 @@ function generate(base, jolly){
 
   var lg = new THREE.BufferGeometry();
   lg.addAttribute( 'position', new THREE.BufferAttribute( completeVertices, 3 ) );
-  var lm = new THREE.MeshLambertMaterial({flatShading:false, color: 0x0000ff, side: THREE.DoubleSide, wireframe: true, transparent: true, opacity: 0.8});
-  // var lm = new THREE.MeshPhongMaterial({flatShading:false, color: 0x0000ff, side: THREE.DoubleSide, wireframe: false, transparent: true, opacity: 0.8});
+  // var lm = new THREE.MeshLambertMaterial({flatShading:false, color: 0x0000ff, side: THREE.DoubleSide, wireframe: true, transparent: true, opacity: 0.8});
+  var lm = new THREE.MeshPhongMaterial({flatShading:false, color: 0x0000ff, side: THREE.DoubleSide, wireframe: false, transparent: true, opacity: 0.8});
   var link = new THREE.Mesh(lg,lm);
 
   console.timeEnd('generate')
@@ -186,6 +208,8 @@ function generate(base, jolly){
   else if (_.isFunction(jolly)){
     jolly(link);
   }
+  console.time('generate')
+  console.log(jolly)
 }
 
 function sewer(a_verts, b_verts){

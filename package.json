@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/ronzim/sandbox#readme",
   "dependencies": {
-    "electron": "^4.0.1",
+    "electron": "^4.0.4",
     "electron-window": "^0.8.1",
     "fs-extra": "^7.0.1",
     "jsonlines": "^0.1.1",
@@ -36,6 +36,7 @@
     "ping.js": "^0.2.1",
     "three-stl-loader": "^1.0.6",
     "underscore": "^1.9.1",
-    "web-pingjs": "^1.0.1"
+    "web-pingjs": "^1.0.1",
+    "yaot": "^1.1.3"
   }
 }
