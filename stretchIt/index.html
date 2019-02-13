@@ -24,7 +24,7 @@
 				70,			// Field of view
 				800 / 600,		// Aspect ratio
 				0.1,			// Near plane
-				10000			// Far plane
+				1000			// Far plane
 			);
 			var eye = new THREE.Vector3(300, -300, 0);
 			var up  = new THREE.Vector3(0,0,1);
@@ -96,13 +96,14 @@
 				var m = new THREE.MeshLambertMaterial({color: 'green', wireframe: true});
 				abt = new THREE.Mesh(g,m);
 				abt.original = new THREE.Mesh(g.clone(),m.clone());
-				abt.height = 6.63;
+				abt.geometry.computeBoundingBox();
+				abt.height = abt.geometry.boundingBox.getSize(new THREE.Vector3()).z;
 				scene.add(abt);
 
 				basePoint = new THREE.Vector3(52.206, 83.724, 27.714);
 				direction = new THREE.Vector3(-0.049, -0.125, -0.99).negate();
 				// TODO fix this
-				basePoint = geometryUtils.movePointOverDir(basePoint, direction, -0.335);
+				// basePoint = geometryUtils.movePointOverDir(basePoint, direction, -0.335);
 
 				// add helpers
 				var sp = new THREE.SphereGeometry(0.5,8,8);
@@ -129,12 +130,14 @@
 			// key function :
 			// it stretches meshes on a plane defined by a point and mesh main axis
 
-			function stretchIt(mesh, point, sf, l, type, cb){
-				var verts = mesh.original.geometry.attributes.position.array.slice();
+			function stretchItAlongPlane(mesh, point, sf, l, type, cb){
+				// var verts = mesh.original.geometry.attributes.position.array.slice();
+				var verts = mesh.geometry.attributes.position.array.slice();
+
 				// mesh.geometry.computeBoundingBox();
 				// var bb = mesh.geometry.boundingBox;
 				// var l = Math.abs(bb.max.y - bb.min.y);
-				
+
 				if(type == 'parabolic') {
 					var a1 = (1-sf) / ((l**2)/4 - point.y*l + point.y**2);
 					var b1 = -2*a1*point.y;
@@ -146,14 +149,12 @@
 				else if (type == 'linear') {
 					var a1 = a2 = 0;
 
+					// s=0
 					var b1 = (1-sf) / (l - point.y);
 					var c1 = (sf*l - point.y) / (l - point.y);
 					console.log(b1, c1)
 
-					// var b2 = (1-sf) / -(l + point.y);
-					// var c2 = -(point.y + sf*l) / -(l + point.y);
-					// console.log(b2, c2)
-
+					// s=1
 					var b2 = (sf-1) / point.y;
 					var c2 = 1;
 					console.log(b2, c2)
@@ -198,39 +199,90 @@
 				return mesh;
 			}
 
-			function applyStretch(mesh, point, direction, s, sf, type, cb){
+			function stretchIt(mesh, point, params, l){
+				var sf_top    = params.stretch_top;
+				var sf_bottom = params.stretch_bottom;
+				var sf_height = params.scaleH;
+				var type      = params.type;
+
+				var verts = mesh.original.geometry.attributes.position.array.slice();
+
+				if(type == 'parabolic') {
+					var a1 = (1-sf) / ((l**2)/4 - point.y*l + point.y**2);
+					var b1 = -2*a1*point.y;
+					var c1 = a1*(point.y**2) + sf;
+					var a2 = (1-sf) / ((l**2)/4 + point.y*l + point.y**2);
+					var b2 = -2*a2*point.y;
+					var c2 = a2*(point.y**2) + sf;
+				}
+				else if (type == 'linear') {
+					var a = 0;
+					var b = (sf_top-sf_bottom)/l;
+					var c = (sf_top-sf_bottom)/2 + sf_bottom;
+				}
+				else {
+					console.warn('no matching type');
+					return;
+				}
+
+				var strVerts = verts.map(function(v, k, arr){
+					var pos = k%3;
+
+					switch(pos){
+						case 0:	// store y cordinate
+										y_old = (arr[k+1]);
+										// move coordinates according to y stored position
+										// x
+										v *= a*(y_old**2) + b*y_old + c;
+										// y
+										arr[k+1] *= sf_height;
+										// z
+										arr[k+2] *= a*(y_old**2) + b*y_old + c;
+										break;
+						case 1:	// do nothing
+										v *= 1.0;
+										break;
+						case 2:	// do nothing
+										// y = (arr[k-1]);
+										// v *= a*(y**2) + b*y + c;
+										v *= 1.0;
+										break;
+					}
+					return v;
+				})
+
+				mesh.geometry.attributes.position.array = strVerts.slice();
+				mesh.geometry.attributes.position.needsUpdate = true;
+				return mesh;
+			}
+
+			function applyStretch(mesh, point, direction, s, params){
 				console.time('stretch');
 				// move to origin
 				var quaternion = new THREE.Quaternion().setFromUnitVectors(direction, new THREE.Vector3(0,1,0));
-				var rotMat = new THREE.Matrix4().makeRotationFromQuaternion(quaternion);
-				mesh.geometry.computeBoundingBox();
-				mesh.original.geometry.computeBoundingBox();
-				var h = abt.height;
-				var matrix = new THREE.Matrix4().makeTranslation(-point.x, -point.y, -point.z);
-				// var matrix = geometryUtils.translateAxisMatrix(direction, h/2 + point.length());
+				var rotMat     = new THREE.Matrix4().makeRotationFromQuaternion(quaternion);
+				var matrix 		 = new THREE.Matrix4().makeTranslation(-point.x, -point.y, -point.z);
 				matrix.premultiply(rotMat);
-				mesh.geometry.applyMatrix(matrix);
 				mesh.original.geometry.applyMatrix(matrix);
-				// stretch
+				console.log(matrix)
+				mesh.original.geometry.computeBoundingBox();
+				var h = mesh.original.geometry.boundingBox.getSize(new THREE.Vector3()).z;
 				var bottom = new THREE.Vector3(0, 0, 0);
 				var top    = new THREE.Vector3(0, h, 0);
 				// corrections to avoid mesh distortion on top
 				s = s == 1 ? 1.01 : s;
 				s = s == 0 ? -0.01 : s;
-				console.log('>>>>>>> s', s)
 				var center = new THREE.Vector3().lerpVectors(bottom, top, s);
 
-				var stretched = stretchIt(mesh, center, sf, h, type);
+				var stretched = stretchIt(mesh, center, params, h);
 				// put back in position
 				var inverseMatrix = new THREE.Matrix4().getInverse(matrix);
 				stretched.geometry.applyMatrix(inverseMatrix);
 				stretched.original.geometry.applyMatrix(inverseMatrix);
+
 				// pass to callback
 				// cb(stretched);
 				console.timeEnd('stretch')
-				if (cb){
-					cb(mesh);
-				}
 			}
 
 			function scaleAsymmetric(mesh, point, axis, sf){
@@ -254,30 +306,69 @@
 
 			};
 
+			function scaleAsymmetricMatrix(point, axis, sf){
+				// move to origin
+				var quaternion    = new THREE.Quaternion().setFromUnitVectors(axis, new THREE.Vector3(0,1,0));
+				var rotMatrix     = new THREE.Matrix4().makeRotationFromQuaternion(quaternion);
+				var originMatrix  = new THREE.Matrix4().makeTranslation(-point.x, -point.y, -point.z);
+				var scalingMatrix = new THREE.Matrix4().makeScale(1,sf,1);
+				var backPosMatrix = new THREE.Matrix4().getInverse(originMatrix);
+				var quaternion2   = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), axis);
+				var backRotMatrix = new THREE.Matrix4().makeRotationFromQuaternion(quaternion2);
+
+				var matrix = new THREE.Matrix4();
+				matrix.premultiply(originMatrix);
+				matrix.premultiply(rotMatrix);
+				matrix.premultiply(scalingMatrix);
+				matrix.premultiply(backRotMatrix);
+				matrix.premultiply(backPosMatrix);
+
+				return matrix;
+			};
+
+			function generateStretchedGeometry(geometry, params){
+				console.log(geometry, params)
+				applyStretch(abt, basePoint, direction, null, params.stretch_top, params.stretch_bottom, params.scaleH, params.type);
+			}
+
 			// GUI
 			var content = {
 				type : 'linear',
-				stretch  : 1.0,
+				stretch_top  : 1.0,
+				stretch_bottom  : 1.0,
 				position : 0.5,
-				scaleH   : 1.0
+				scaleH   : 1.0,
+				generate : function(){
+					applyStretch(abt, basePoint, direction, null, content);
+				}
 			};
 			console.log(controls);
 			var gui = new dat.GUI();
 			gui.add(content, 'type', ['linear', 'parabolic'])
 				.onChange(function(v){
 					console.time('stretch')
-					applyStretch(abt, basePoint, direction, content.position, content.stretch, v);
 					content.type = v;
+					applyStretch(abt, basePoint, direction, null, content);
 				})
 				.onFinishChange(function(){
 					controls.enabled = true;
 				});
-			gui.add(content, 'stretch', 0, 3)
+			gui.add(content, 'stretch_top', 0, 3)
 				.onChange(function(v){
 					controls.enabled = false;
 					console.time('stretch')
-					applyStretch(abt, basePoint, direction, content.position, v, content.type);
 					content.stretch = v;
+					applyStretch(abt, basePoint, direction, null, content);
+				})
+				.onFinishChange(function(){
+					controls.enabled = true;
+				});
+			gui.add(content, 'stretch_bottom', 0, 3)
+				.onChange(function(v){
+					controls.enabled = false;
+					console.time('stretch')
+					content.stretch = v;
+					applyStretch(abt, basePoint, direction, null, content);
 				})
 				.onFinishChange(function(){
 					controls.enabled = true;
@@ -286,8 +377,8 @@
 				.onChange(function(v){
 					controls.enabled = false;
 					console.time('stretch')
-					applyStretch(abt, basePoint, direction, v, content.stretch, content.type);
 					content.position = v;
+					applyStretch(abt, basePoint, direction, null, content);
 				})
 				.onFinishChange(function(){
 					controls.enabled = true;
@@ -296,12 +387,13 @@
 				.onChange(function(v){
 					controls.enabled = false;
 					console.time('stretch')
-					scaleAsymmetric(abt, basePoint, direction, v, content.type);
 					content.scaleH = v;
+					applyStretch(abt, basePoint, direction, null, content);
 				})
 				.onFinishChange(function(){
 					controls.enabled = true;
 				});
+			gui.add(content, 'generate')
 		};
 		</script>
 	</head>
