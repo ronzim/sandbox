@@ -1,0 +1,3 @@
+/Users/orobix/Projects/sandbox_/scene_clean/app_build/CMakeFiles/rebuild_cache.dir
+/Users/orobix/Projects/sandbox_/scene_clean/app_build/CMakeFiles/edit_cache.dir
+/Users/orobix/Projects/sandbox_/scene_clean/app_build/CMakeFiles/scene.dir
