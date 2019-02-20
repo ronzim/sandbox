@@ -4,15 +4,26 @@ var uuid = require("uuid");
 var fs   = require('fs-extra');
 var TrackballControls = require( path.join( rootPath, 'lib', 'TrackballControls.js'));
 
+const dev = false;
+
 var initScene = function() {
+  var video = document.createElement('video');
+  video.src = "./Video.mp4";
+  video.load();
+  //make your video canvas
+  var videocanvas = document.createElement('canvas');
+  var videocanvasctx = videocanvas.getContext('2d');
 
   //================================//
   //====== SCENE SETUP =============//
   //================================//
 
+  var cameraOriginalPosition = new THREE.Vector3(0, 20, 90);
+
   var renderer = new THREE.WebGLRenderer( { antialias: true } );
   document.getElementById("canvas-container").appendChild(renderer.domElement)
-  renderer.setClearColor( 0xAAAAAA, 1 );
+  renderer.setClearColor( 0x112233, 1 );
+  // renderer.setClearColor( 0x469aaa, 1 );
   renderer.setSize(1600,900);
 
   var scene = new THREE.Scene();
@@ -22,9 +33,7 @@ var initScene = function() {
   // var camera = new THREE.OrthographicCamera( frustumSize * aspect / - 2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / - 2, 0.001, 1000 );
 
   var camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 1000 );
-  camera.position.z = 50;
-  camera.position.y = 50;
-  camera.position.x = 50;
+  camera.position.copy(cameraOriginalPosition);
   camera.lookAt(0,0,0);
 
   var control = new THREE.TrackballControls( camera, renderer.domElement );
@@ -35,17 +44,19 @@ var initScene = function() {
   directionalLight.position.set (0,50,50);
   scene.add( directionalLight );
 
-  var gridPlane = new THREE.GridHelper(300,50);
-  var gridPlaneAxis = new THREE.AxisHelper(20);
-  scene.add (gridPlane);
-  scene.add (gridPlaneAxis);
+  if (dev){
+    var gridPlane = new THREE.GridHelper(300,50);
+    var gridPlaneAxis = new THREE.AxisHelper(20);
+    scene.add (gridPlane);
+    scene.add (gridPlaneAxis);
+  }
 
   //================================//
   //====== SCENE CONTENT ===========//
   //================================//
 
-  var baseName = 'slide_';
-  var numberOfSlides = 20;
+  var baseName = 'TavolaRotonda3D-';
+  var numberOfSlides = 23;
   var slides = new Array(numberOfSlides).fill(0).map((a,n) => baseName+(n+1));
   console.log(slides)
 
@@ -54,14 +65,19 @@ var initScene = function() {
   var material = new THREE.MeshBasicMaterial( { color: 0xffff00, side: THREE.DoubleSide, transparent: true, opacity: 0.4, wireframe:true } );
   var circle = new THREE.Mesh( geometry, material );
   circle.geometry.rotateX(-Math.PI/2);
+  circle.geometry.rotateY(-Math.PI/2);
   var slidePos = circle.geometry.vertices;
-  scene.add( circle );
 
-  circle.geometry.vertices.forEach(function(v){
-    var ball = new THREE.Mesh(new THREE.SphereGeometry( 0.3, 8, 8), new THREE.MeshBasicMaterial( { color: 0x330000, transparent: true, opacity: 0.4 } ))
-    ball.position.copy(v);
-    scene.add(ball)
-  })
+  if (dev) {
+    scene.add( circle );
+
+    circle.geometry.vertices.forEach(function(v,i){
+      var color = i==1 ? 'red' : 'green'
+      var ball = new THREE.Mesh(new THREE.SphereGeometry( 1, 8, 8), new THREE.MeshBasicMaterial( { color: color, transparent: true, opacity: 0.4 } ))
+      ball.position.copy(v);
+      scene.add(ball)
+    })
+  }
 
   // add slides
   slides.forEach((s,i) => addSlide(s,i));
@@ -88,7 +104,22 @@ var initScene = function() {
     img.map.magFilter = THREE.LinearFilter;
     img.map.minFilter = THREE.LinearFilter;
     img.map.needsUpdate = true; //ADDED
-    console.log(img.map)
+    // console.log(img.map)
+
+    // if (i == 21){
+    //     //set its size
+    //     videocanvas.width = planeDim.x*100;
+    //     videocanvas.height = planeDim.y*100;
+    //
+    //     //draw a black rectangle so that your spheres don't start out transparent
+    //     videocanvasctx.fillStyle = "#000000";
+    //     videocanvasctx.fillRect(0,0,planeDim.x*100,planeDim.y*100);
+    //
+    //     //add canvas to new texture
+    //     var texture = new THREE.Texture(videocanvas);
+    //
+    //     img.map = texture;
+    // }
 
     // plane
     var plane = new THREE.Mesh(new THREE.PlaneGeometry(planeDim.x, planeDim.y, planeDim.x, planeDim.y),img);
@@ -96,6 +127,34 @@ var initScene = function() {
     plane.position.copy(slidePos[i+1]);
     scene.add(plane);
   }
+
+  // title
+
+  var title;
+  var loader = new THREE.FontLoader();
+
+  loader.load( './resources/optimer_regular.typeface.json', function ( font ) {
+
+  	var geometry = new THREE.TextGeometry( '3D Visualization', {
+  		font: font,
+  		size: 5,
+  		height: 3,
+  		curveSegments: 15,
+  		// bevelEnabled: true,
+  		// bevelThickness: 10,
+  		// bevelSize: 8,
+  		// bevelSegments: 5
+  	} );
+
+    var titleMaterial = new THREE.MeshPhongMaterial({color: 'yellow'});
+    title = new THREE.Mesh(geometry, titleMaterial);
+    geometry.computeBoundingBox();
+    var center = geometry.boundingBox.getCenter();
+    geometry.applyMatrix(new THREE.Matrix4().makeTranslation(-center.x,5,-center.z))
+    scene.add(title);
+  } );
+
+  console.log(scene)
 
 
   //================================//
@@ -113,7 +172,7 @@ var initScene = function() {
     selected = null;
 
     scene.children.forEach(function(child){
-      if (child.name.includes('slide')){
+      if (child.name.includes(baseName)){
         // child.material.color = new THREE.Color('white');
         child.material.transparent = true;
         child.material.opacity = 0.5;
@@ -130,19 +189,29 @@ var initScene = function() {
 
     var intersects = raycaster.intersectObjects( scene.children );
 
-    intersects.forEach(function(int){
-      if (int.object.name.includes('slide')){
-        selected = int.object;
-        // int.object.material.color = new THREE.Color('yellow');
-        int.object.material.transparent = false;
-      }
-    })
+    var int = intersects.shift();
+    if (int && int.object.name.includes(baseName)){
+      selected = int.object;
+      // int.object.material.color = new THREE.Color('yellow');
+      int.object.material.transparent = false;
+    }
+
+    // intersects.forEach(function(int){
+    //   if (int.object.name.includes('slide')){
+    //     selected = int.object;
+    //     // int.object.material.color = new THREE.Color('yellow');
+    //     int.object.material.transparent = false;
+    //   }
+    // })
 
   }
 
   function onmouseup( event ){
     console.log('onmouseup', selected);
     if (selected && event.which === 1){
+      if (selected.name.includes('22')){
+        video.play()
+      };
       // camera.up = new THREE.Vector3(0,1,0);
       // camera.position.set(selected.position.x, selected.position.y, selected.position.z+7.5)
       // control.target.copy(selected.position);
@@ -163,11 +232,11 @@ var initScene = function() {
   function onkeydown(event){
     console.log(event)
     if (fixedView && event.key == 'ArrowRight'){
-      var currentSlideNumber = selected.name.split('_')[1];
+      var currentSlideNumber = selected.name.split('-')[1];
       moveToSlide(++currentSlideNumber);
     }
     else if (fixedView && event.key == 'ArrowLeft'){
-      var currentSlideNumber = selected.name.split('_')[1];
+      var currentSlideNumber = selected.name.split('-')[1];
       moveToSlide(--currentSlideNumber);
     }
   }
@@ -178,7 +247,7 @@ var initScene = function() {
 
   function moveToSlide(slideN){
     console.log(slideN)
-    var next_selected = scene.getObjectByName('slide_'+(slideN));
+    var next_selected = scene.getObjectByName(baseName+(slideN));
     if (next_selected){
       fixedViewOff()
       selected = next_selected;
@@ -194,7 +263,7 @@ var initScene = function() {
     fixedView = true;
     document.onmousemove = null;
     scene.children.forEach(function(child){
-      if (child.name.includes('slide') && child.name !== selected.name){
+      if (child.name.includes(baseName) && child.name !== selected.name){
         // child.material.color = new THREE.Color('white');
         child.visible = false;
       }
@@ -207,14 +276,22 @@ var initScene = function() {
     fixedView = false;
     document.onmousemove = onmousemove;
     scene.children.forEach(function(child){
-      if (child.name.includes('slide')){
+      if (child.name.includes(baseName)){
         // child.material.color = new THREE.Color('white');
         child.visible = true;
         child.material.transparent = true;
       }
     })
-    cameraTargetPosition = new THREE.Vector3(50,50,50);
+
+    console.log('cameraTargetPosition', cameraTargetPosition)
+    cameraTargetPosition   = new THREE.Vector3().copy(cameraOriginalPosition);
     controlsTargetPosition = new THREE.Vector3(0,0,0);
+
+    setTimeout(function(){
+      console.log('cameraTargetPosition', null)
+      cameraTargetPosition = null;
+      controlsTargetPosition = null;
+    }, 1000);
   }
 
   function moveCamera(){
@@ -222,10 +299,24 @@ var initScene = function() {
     var old_target = control.target;
 
     if (cameraTargetPosition){
+      console.log('cameraTargetPosition', cameraTargetPosition)
+      camera.up = new THREE.Vector3(0,1,0);
       camera.position.lerp(cameraTargetPosition, 0.1);
       control.target.lerp(controlsTargetPosition, 0.1);
     }
+  }
 
+  function rotateTitle(){
+    if (title){
+      title.matrixAutoUpdate = false;
+      title.position.set(0,0,0);
+      title.rotateY(0.01);
+      // title.updateMatrix();
+      var center = title.geometry.boundingBox.getCenter();
+      title.position.set(-center.x,20,-center.z);
+      // title.updateMatrix();
+      title.matrixAutoUpdate = true;
+    }
   }
 
 
@@ -237,13 +328,24 @@ var initScene = function() {
   var radius = 1.0;
 
   function render() {
+    //check for vid data
+    // if(video.readyState === video.HAVE_ENOUGH_DATA){
+    //   //draw video to canvas starting from upper left corner
+    //   videocanvasctx.drawImage(video, 0, 0);
+    //   //tell texture object it needs to be updated
+    //   if (scene.getObjectByName(baseName+'22').material){
+    //     scene.getObjectByName(baseName+'22').material.map.needsUpdate = true;
+    //   }
+    // }
+
   	requestAnimationFrame( animate );
     control.update(0.5);
   	renderer.render( scene, camera );
   }
 
   function animate(){
-    moveCamera()
+    rotateTitle();
+    moveCamera();
     render();
   }
 
