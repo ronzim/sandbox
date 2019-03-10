@@ -233,11 +233,6 @@ if __name__ == '__main__':
             wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
             wr.writerow(urls)
 
-        if os.path.isfile(path_list_urls):
-            with open('dowloaded_song.csv', 'a') as f:
-                f.write(','.join([title,artist,youtube_link,entry]))
-                f.write('\n')
-
         counter = 0
         ok = 0
         nok = 0
