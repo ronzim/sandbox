@@ -87,7 +87,7 @@ def getYoutubeLink(link):
                 return False
             query = splitted[1].split('&')[0]
             # get first google response (hoping it is a youtube link)
-            for link in search(query, tld = 'co.in', num=1, stop=5, pause=2):
+            for link in search(query, tld = 'co.in', num=1, stop=10, pause=2):
                 if 'youtube' in link:
                     print ('>>> YOUTUBE link: ',link)
                     return link
@@ -144,6 +144,7 @@ ydl_opts = {
     }],
     'logger': MyLogger(),
     'progress_hooks': [my_hook],
+    'noplaylist':True
 }
 
 # ------------------------------------------------------
@@ -233,12 +234,10 @@ if __name__ == '__main__':
             wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
             wr.writerow(urls)
 
-        counter = 0
         ok = 0
         nok = 0
 
-        for entry in urls:
-            counter+=1
+        for counter, entry in enumerate(urls):
             print ('##', counter, ' out of ', len(urls))
             if entry:
                 print ('GETTING LINK FROM', entry)
