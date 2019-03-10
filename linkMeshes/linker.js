@@ -2,7 +2,7 @@ const geometryUtils = require('./geometryUtils');
 const geometryUtils_ = require('./geometryUtils_intra');
 const _ = require('underscore');
 
-function generate(srcVerts, trgVerts, ln, jolly){
+function init(srcVerts, trgVerts, ln, jolly){
   console.time('generate')
   // spline & sample trgVerts to have equal number of points
   var sampling = geometryUtils_.plainArrayToThreePointsArray(trgVerts);
@@ -53,8 +53,53 @@ function generate(srcVerts, trgVerts, ln, jolly){
   // jolly.add(link);
   // END DEV
 
+  // TODO =============================================================================== TODO //
+  // =========|| a base model should be defined by a data struct based on:  ||================ //
+  // =========|| - srcVerts                                                 ||================ //
+  // =========|| - sampledPoints (eg opposite edge sampling)                ||================ //
+  // =========|| - delta @ s=0.5 to manage flaring                          ||================ //
+  // =========|| - ln (number of layers)                                    ||================ //
+  // TODO =============================================================================== TODO //
+
+  var base = {
+    srcVerts : srcVerts,
+    sampledPoints : sampledPoints,
+    delta : 1,
+    ln : 50
+  }
+  console.log(base)
+  return base;
+}
+
+function addFlaring(layers, axis, jolly, amountMax){
+  var layers_tot = layers.length-1;
+  for (var l=0; l<layers.length; l++){
+    var layer = layers[l];
+    var alpha = l<layers_tot/2 ? l/layers_tot : (layers_tot-l)/layers_tot;
+    console.log(l, alpha**2, Math.sqrt(alpha))
+    for (var p=0; p<layer.length; p+=3){
+      var projection = new THREE.Vector3(layer[p], layer[p+1], layer[p+2]).projectOnVector(axis);
+      var dir = new THREE.Vector3(layer[p], layer[p+1], layer[p+2]).sub(projection).normalize();
+      // jolly.add(new THREE.ArrowHelper(dir, new THREE.Vector3(layer[p], layer[p+1], layer[p+2]), 1, 'green'))
+      layer[p]   -= dir.x*Math.sqrt(alpha)*amountMax;
+      layer[p+1] -= dir.y*Math.sqrt(alpha)*amountMax;
+      layer[p+2] -= dir.z*Math.sqrt(alpha)*amountMax;
+    }
+  }
+}
+
+function generate(base, jolly){
+  console.time('generate')
+  console.log(base)
   // compute ln layers
-  var layers = sampleSpace(srcVerts, sampledPoints, ln);
+  var c1 = geometryUtils.getPointsCentroid(geometryUtils_.plainArrayToThreePointsArray(base.srcVerts));
+  var c2 = geometryUtils.getPointsCentroid(geometryUtils_.plainArrayToThreePointsArray(base.sampledPoints));
+  var axis = new THREE.Vector3().subVectors(c2,c1).normalize();
+
+  jolly.add(new THREE.ArrowHelper(axis, c1, 30))
+
+  var layers = sampleSpace(base.srcVerts, base.sampledPoints, base.ln);
+  addFlaring(layers, axis, jolly, base.delta);
 
   // sew each layer with the follower, storing vertices
   var finalVertices = new Float32Array(10000000).fill(99999);
@@ -95,7 +140,7 @@ function generate(srcVerts, trgVerts, ln, jolly){
   var finalBottomVertices = new Float32Array(10000000).fill(99999);
 
   // top
-  var centerTopVerts = new Array(srcVerts.length).fill(0).map(function(e,k){
+  var centerTopVerts = new Array(base.srcVerts.length).fill(0).map(function(e,k){
     switch (k%3){
       case 0: return c1.x;
         break;
@@ -106,7 +151,7 @@ function generate(srcVerts, trgVerts, ln, jolly){
     }
   });
 
-  var topLayers = sampleSpace(srcVerts, centerTopVerts, ln);
+  var topLayers = sampleSpace(base.srcVerts, centerTopVerts, base.ln);
 
   for (var f=0; f<topLayers.length-1; f++){
     var partialTopVertices = sewer(topLayers[f], topLayers[f+1]);
@@ -114,7 +159,7 @@ function generate(srcVerts, trgVerts, ln, jolly){
   }
 
   // bottom
-  var centerBottomVerts = new Array(srcVerts.length).fill(0).map(function(e,k){
+  var centerBottomVerts = new Array(base.srcVerts.length).fill(0).map(function(e,k){
     switch (k%3){
       case 0: return c2.x;
         break;
@@ -125,7 +170,7 @@ function generate(srcVerts, trgVerts, ln, jolly){
     }
   });
 
-  var topLayers = sampleSpace(sampledPoints, centerBottomVerts, ln);
+  var topLayers = sampleSpace(base.sampledPoints, centerBottomVerts, base.ln);
 
   for (var f=0; f<topLayers.length-1; f++){
     var partialBottomVertices = sewer(topLayers[f], topLayers[f+1]);
@@ -163,6 +208,8 @@ function generate(srcVerts, trgVerts, ln, jolly){
   else if (_.isFunction(jolly)){
     jolly(link);
   }
+  console.time('generate')
+  console.log(jolly)
 }
 
 function sewer(a_verts, b_verts){
@@ -316,3 +363,4 @@ exports.computeEdgeList = computeEdgeList;
 exports.extractBoundaryEdges = extractBoundaryEdges;
 exports.reverse = reverse;
 exports.generate = generate;
+exports.init = init;

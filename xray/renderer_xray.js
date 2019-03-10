@@ -217,14 +217,21 @@ var i=0;
 // var fileNames = ['../bone.stl'];
 var path = '/Users/orobix/Desktop/segmentation_layers/'
 var fileNames = [
-                  '150_dec90.stl',
+                  // '150_dec90.stl',
                   // '175_dec90.stl',
                   // '200_dec90.stl',
                   // '225_dec90.stl',
-                  '250_dec90.stl'
+                  // '250_dec90.stl'
                   // '500.stl',
                   // '1000.stl',
                   // '2000.stl'
+                  // '500+2000.stl'
+                  // '500+1500.stl'
+                  // '1500+2000.stl'
+                  // '500-2000.stl'
+                  // '500-500-2000.stl'
+                  // '500-1000.stl'
+                  '150_2000.stl'
                 ];
 var completeGeometry = new THREE.Geometry();
 
@@ -235,39 +242,63 @@ function loadSurfaces(stack, scene, i){
     loader.load(path+fileNames[i], function(geometry_) {
       console.log(geometry_)
       var geometry = new THREE.Geometry().fromBufferGeometry(geometry_);
-      console.log('>>>>> from buffer geometry to geometry', geometry_);
+
+      // loadSingleSurface(geometry)
+
+      console.log('>> from buffer geometry to geometry', geometry);
       completeGeometry.merge(geometry);
       i++;
       setTimeout(function(){
         loadSurfaces(stack, scene, i);
-        console.log(completeGeometry)
+        console.log('>> completeGeometry', completeGeometry);
       }, 100);
     });
   }
   else{
     setTimeout(function(){
       loadMc(stack, scene, completeGeometry);
+      console.log('ok')
     }, 100);
   }
+}
+
+function loadSingleSurface(geometry){
+  var mokingMaterial = new THREE.MeshPhongMaterial({color: new THREE.Color(geometry.vertices.length), transparent: true, opacity: 0.7});
+  var mokingMesh = new THREE.Mesh(completeGeometry, mokingMaterial);
+  scene.add(mokingMesh);
 }
 
 function loadMc(stack, scene, geometry){
   // console.log('>>>>> from buffer geometry to geometry', geometry_);
   // var geometry = new THREE.Geometry().fromBufferGeometry(geometry_);
-  setTimeout(function(){
+  // setTimeout(function(){
     geometry.computeVertexNormals();
     geometry.computeBoundingBox();
-    var matrix = new THREE.Matrix4();
-    matrix.elements = [-1, 0, 0, 0,
-                        0, -1, 0, 0,
-                        0, 0, 1, 0,
-                        0, 0, 0 ,1 ];
-    geometry.applyMatrix(matrix);
+    // var matrix = new THREE.Matrix4();
+    // matrix.elements = [-1, 0, 0, 0,
+    //                     0, -1, 0, 0,
+    //                     0, 0, 1, 0,
+    //                     0, 0, 0 ,1 ];
+    // geometry.applyMatrix(matrix);
+    console.log('VERTICES: ', geometry.vertices.length)
     var mcStackHelper = panorex.initMcStackHelper(stack, geometry);
     console.log(mcStackHelper);
     scene.add(mcStackHelper);
     console.log(scene);
-  }, 5000);
+
+    // var mokingMaterial = new THREE.MeshPhongMaterial({color: 'white', transparent: true, opacity: 0.7});
+    // var mokingMesh = new THREE.Mesh(completeGeometry, mokingMaterial);
+    // scene.add(mokingMesh);
+
+    // add a solid ball to check opacity
+    var g = new THREE.SphereGeometry(3,32,32);
+    var m = new THREE.MeshBasicMaterial({color: 'red'});
+    var ball = new THREE.Mesh(g,m);
+    ball.position = geometry.boundingBox.getCenter(ball.position);
+    console.log(ball.position)
+    scene.add(ball);
+
+  // }, 5000);
 }
 
 

@@ -103,7 +103,7 @@
 			// load brush
 			var brushVerts = [];
 
-			fs.readJSON('./linkMeshes/brushedArea.json', function(err, data){
+			fs.readJSON('./brushedArea.json', function(err, data){
 				console.log(data);
 				let verts = new Float32Array(data.vertices);
 				let norms = new Float32Array(data.normals);
@@ -135,9 +135,10 @@
 
 				var bm = new THREE.MeshBasicMaterial({color: 0x006666, side: THREE.DoubleSide, wireframe: true, transparent: true, opacity: 0.8});
 				var brush = new THREE.Mesh(bg,bm);
-				// scene.add(brush);
+				console.log('add brush')
+				scene.add(brush);
 			})
-
+setTimeout(function(){
 			// load abt
 			var loader = new THREE.STLLoader();
 			var abtVerts = allAbtVerts = [];
@@ -170,7 +171,6 @@
 					}
 				}
 				console.log('abt', abtVerts.length/3);
-				console.timeEnd('selecting');
 
 				abtVerts = geometryUtils_.checkProfile(abtVerts);
 
@@ -202,7 +202,9 @@
 
 				computeVerse(brushVerts);
 
-				linker.generate(abtVerts, brushVerts, N, scene);
+				var base = linker.init(abtVerts, brushVerts, N);
+				// var base = linker.init(cylVerts, sqVerts, N);
+				linker.generate(base, scene);
 				// generate(cylVerts)
 			});
 
@@ -218,6 +220,8 @@
 		}
 
 		render();
+
+}, 3000); // end setTimeout
 
 		function computeVerse(verts){
 			var v3array = geometryUtils_.plainArrayToThreePointsArray(verts);

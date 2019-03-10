@@ -12,14 +12,14 @@ varying float flag;
 // main
 //
 void main() {
-  // vNormal = normalize( normalMatrix * normal );
-  vNormal = normal;
-  opacity = 0.2;
+  vNormal = normalize( normalMatrix * normal );
+
+  // vNormal = normal;
   flag = 0.0;
   // if (abs(dot(vNormal, vec3(0,0,1))) < 0.01){
   // if (position.y > uVec3Array[0].y && position.y < uVec3Array[1].y){
 
-  // opacity = pow(1.0 - abs(dot(vNormal, vec3(0, 0, 1))), 3.0);
+  opacity = pow(1.0 - abs(dot(vNormal, vec3(0, 0, 1))), 0.75);
   // opacity *= 1.2*abs(dot(vNormal, vec3(0, 0, 1)));
 
   vPos = vec4(position, 1.0 );
