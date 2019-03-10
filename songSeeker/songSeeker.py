@@ -24,6 +24,7 @@ from __future__ import unicode_literals
 import youtube_dl
 import requests
 import time
+import csv
 from telethon import TelegramClient, sync
 from telethon import utils
 from telethon import events
@@ -120,8 +121,9 @@ def my_hook(d):
         print('Done downloading, now converting ...')
 
 ydl_opts = {
-    'outtmpl' : './Songs/%(title)s.%(ext)s',
-    # 'outtmpl' : './Songs/%(artist)s - %(title)s.%(ext)s',
+    # 'outtmpl' : './Songs/%(title)s.%(ext)s',
+    'outtmpl' : './Songs/%(artist)s - %(title)s.%(ext)s',
+    # 'outtmpl' : '/media/mattia/DATA/2songs1day_7.2.19/%(artist)s - %(title)s.%(ext)s',
     'format': 'bestaudio/best',
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
@@ -185,6 +187,11 @@ if (all_chat):
     urls = []
     urls = getSongLinks(client)
     outfile = open('song_links.txt', 'a+')
+    # outfile.write('########################## INIT NEW SESSION ################')
+    # with open('./songs.csv', 'wb', newline='') as myfile:
+    with open('./songs.csv', 'w+') as myfile:
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+        wr.writerow(urls)
 
     counter = 0
     ok = 0
@@ -210,7 +217,7 @@ if (all_chat):
                         outfile.write('\n! DOWNLOAD ERROR !\n')
                         continue
 
-    outfile.write('####################')
+    outfile.write('#################### END PROCESSING #####################')
     outfile.close()
     # client.disconnect()
     print (' ### DONE ### ')
