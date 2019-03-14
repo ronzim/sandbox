@@ -56,5 +56,5 @@ function logAndCAllNext(data, date){
 }
 
 function writeJson(){
-  fs.writeJSONSync('./rainData.json', rainData);
+  fs.writeJSONSync('../material/rainData.json', rainData);
 }

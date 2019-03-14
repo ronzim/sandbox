@@ -4,7 +4,7 @@ var stat  = require('simple-statistics')
 var Plotly = require('plotly.js-dist')
 
 console.time('read file')
-var data = fs.readJSONSync('./position_data.json')
+var data = fs.readJSONSync('../material/position_data.json')
 console.timeEnd('read file')
 
 console.time('stat')

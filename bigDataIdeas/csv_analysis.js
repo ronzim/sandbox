@@ -3,7 +3,7 @@ const fs = require('fs-extra')
 const _ = require('underscore')
 
 
-const file = fs.createReadStream('./heart.csv');
+const file = fs.createReadStream('../material/heart.csv');
 Papa.parse(file, {
     header: true,
     // worker: true, // Don't bog down the main thread if its a big file
