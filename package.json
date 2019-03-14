@@ -33,10 +33,14 @@
     "jsonlines": "^0.1.1",
     "net-ping": "^1.2.3",
     "node-dir": "^0.1.17",
+    "papaparse": "^4.6.3",
     "ping.js": "^0.2.1",
+    "plotly.js-dist": "^1.45.2",
+    "simple-statistics": "^7.0.2",
     "three-stl-loader": "^1.0.6",
     "underscore": "^1.9.1",
     "web-pingjs": "^1.0.1",
+    "xmlhttprequest": "^1.8.0",
     "yaot": "^1.1.3"
   }
 }

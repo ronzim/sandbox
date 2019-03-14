@@ -1,3 +1,6 @@
 ./material/
 ./node_modules/
 ./crop/ami_original
+./bigDataIdeas/*.csv
+./bigDataIdeas/position_data.json
+*.stl
