@@ -3,8 +3,9 @@ const fs = require('fs-extra')
 const _ = require('underscore')
 var Plotly = require('plotly.js-dist')
 // const THREE = require('./three.js')
-const threeGraph = require('./threeGraph')
-
+// const threeGraph = require('./threeGraph_noise')
+var ThreeGraph = require('./threeGraphs.js').Graph;
+console.log(ThreeGraph)
 
 const file = fs.createReadStream('../material/heart.csv');
 Papa.parse(file, {
@@ -32,9 +33,9 @@ function loadGraph(results){
   // console.log(ages, mhr)
 
   var trace = {
-    x: ages,
-    y: mhrs,
-    z: bps,
+    x: mhrs,
+    y: bps,
+    z: ages,
     name: '',
     mode: 'markers',
     marker: {
@@ -59,6 +60,62 @@ function loadGraph(results){
   Plotly.newPlot('graph-container', data, layout, {responsive: true});
 
   // console.log(threeGraph)
-  threeGraph.newGraph('three-container', data);
+  // threeGraph.newGraph('three-container', data);
+  console.log('here')
+
+  var graph = new ThreeGraph(results.data, 'scatter2d', {'x': "thalach", 'y': "trestbps"})
+  // var graph = new ThreeGraph(results.data, 'scatter2d');
+  // var graph = new ThreeGraph();
+
+  console.log('aaa', graph)
+
+  // SCENE ---------------
+  var container = document.getElementById('three-container');
+  var renderer = new THREE.WebGLRenderer({
+    antialias: true
+  });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setClearColor(0xffffff, 1.0);
+  console.log(container.clientWidth, container.clientHeight)
+  renderer.setSize(1173, 450);
+  container.appendChild(renderer.domElement);
+
+  var camera = new THREE.PerspectiveCamera( 45, 1173 / 450, 0.1, 1000);
+  // var camera = new THREE.OrthograpicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 0.1, 1000);
+  // camera.position.x = 250;
+  // camera.position.y = 250;
+  // camera.position.z = 250;
+  camera.position.set(graph.center.x, graph.center.y, graph.center.z-100);
+  var scene  = new THREE.Scene();
+  var ah = new THREE.AxisHelper(200)
+  var gh = new THREE.GridHelper(300, 60)
+  gh.rotateZ(Math.PI)
+  scene.add(ah)
+  // scene.add(gh)
+  var ambientLight = new THREE.AmbientLight( 0xaaaaaa, 0.7 );
+  scene.add( ambientLight );
+  // var pointLight = new THREE.PointLight( 0xffffff, 0.8 );
+  // camera.add( pointLight );
+  scene.add( camera );
+
+  console.log(scene)
+  var controls = new THREE.TrackballControls(camera, renderer.domElement);
+  controls.target.copy(graph.center)
+
+  scene.add(graph)
+
+  // RENDER
+
+  function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    render();
+  }
+
+  function render() {
+    renderer.render(scene, camera);
+  }
+
+  animate();
 
 }

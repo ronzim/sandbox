@@ -1,50 +1,5 @@
-console.log(THREE)
-
-class Graph extends THREE.Object3D {
-
-  // options : {
-  //  'x' : 'propertyOnXaxis',
-  //  'y' : 'propertyOnYaxis'
-  // }
-
-  constructor(data, type, options) {
-    super();
-
-    this.data = data;
-    this.type = type;
-
-    this.origin = null;
-    this.bb = null;
-    this.content = null;
-    this.refSys = null;
-
-    this.initGraph();
-  }
-
-  initGraph(){
-    switch(this.type){
-      case 'scatter2d' :
-        var geometry = new THREE.BufferGeometry();
-        var material = new THREE.PointsMaterial();
-        this.content.mesh = new THREE.Mesh(geometry, material);
-        break;
-      case '' :
-        break;
-      default :
-        // ...
-      }
-    }
-
-    initRefSys(){
-      this.refSys = new ReferenceSystem(
-                          this.mesh.geometry,
-                          this.type,
-                          options
-                        );
-    }
-
-}
-
+/*jshint esversion: 6 */
+const _ = require('underscore');
 
 class ReferenceSystem extends THREE.Object3D {
 
@@ -100,8 +55,81 @@ class ReferenceSystem extends THREE.Object3D {
 
 }
 
+// options : {
+//  'x' : 'propertyOnXaxis',
+//  'y' : 'propertyOnYaxis'
+// }
+
+class Graph extends THREE.Object3D {
+
+  constructor(data, type, options) {
+
+    super();
+
+    this.data = data;
+    this.type = type;
+    this.options = options;
+
+    this.origin = null;
+    this.bb = null;
+    this.content = null;
+    this.refSys = null;
+    this.center = null;
+
+    console.log(this)
+
+    this.initGraph();
+  }
+
+  initGraph(){
+    console.log('init graph', this.type)
+
+    switch(this.type){
+      case "scatter2d" :
+        var x = _.pluck(this.data, this.options.x);
+        var y = _.pluck(this.data, this.options.y);
+        var z = new Array(x.length).fill(0);
+        var vertsArr = _.zip(x,y,z)
+        var verts = _.map(vertsArr, v => {
+          return new THREE.Vector3(parseFloat(v[0]), parseFloat(v[1]), parseFloat(v[2])); // TODO check datatype
+        });
+        var pointGeometry = new THREE.BufferGeometry().setFromPoints(verts);
+        pointGeometry.computeBoundingBox();
+        this.center = pointGeometry.boundingBox.getCenter();
+        var pointMaterial = new THREE.PointsMaterial({
+          size : 1.5,
+          sizeAttenuation : false,
+          color : 'red' // TODO props
+        });
+        this.content = new THREE.Points(pointGeometry, pointMaterial);
+        this.add(this.content);
+        break;
+
+      case '' :
+        break;
+      default :
+        console.log('default')
+        // ...
+      }
+    }
+
+    initRefSys(){
+      this.refSys = new ReferenceSystem(
+                          this.mesh.geometry,
+                          this.type,
+                          options
+                        );
+    }
+
+}
+
+
 // TODO
 // this.add(obj) instead of this.obj = obj;
+// resize axis (more space btw points)
 
-console.log(new Graph)
-console.log(new ReferenceSystem)
+// console.log(new Graph)
+// console.log(new ReferenceSystem)
+
+/// EXPORTS ///
+exports.Graph = Graph;
