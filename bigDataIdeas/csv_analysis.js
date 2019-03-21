@@ -2,6 +2,8 @@ const Papa = require('papaparse')
 const fs = require('fs-extra')
 const _ = require('underscore')
 var Plotly = require('plotly.js-dist')
+// const THREE = require('./three.js')
+const threeGraph = require('./threeGraph')
 
 
 const file = fs.createReadStream('../material/heart.csv');
@@ -39,7 +41,8 @@ function loadGraph(results){
       size: 2,
       color: _.pluck(results.data, "sex")
     },
-    type: 'scatter3d',
+    // type: 'scatter3d',
+    type: 'scatter',
     // text:  _.pluck(days, 'travelTime')
   };
 
@@ -54,4 +57,8 @@ function loadGraph(results){
   var data = [trace];
 
   Plotly.newPlot('graph-container', data, layout, {responsive: true});
+
+  // console.log(threeGraph)
+  threeGraph.newGraph('three-container', data);
+
 }
