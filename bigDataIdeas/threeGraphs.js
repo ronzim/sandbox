@@ -101,7 +101,7 @@ class ReferenceSystem extends THREE.Object3D {
 }
 
 // TODO
-// this.add(obj) instead of this.obj = obj; 
+// this.add(obj) instead of this.obj = obj;
 
 console.log(new Graph)
 console.log(new ReferenceSystem)
