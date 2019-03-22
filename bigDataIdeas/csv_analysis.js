@@ -85,7 +85,7 @@ function loadGraph(results){
   // camera.position.x = 250;
   // camera.position.y = 250;
   // camera.position.z = 250;
-  camera.position.set(graph.center.x, graph.center.y, graph.center.z-100);
+  camera.position.set(graph.center.x, graph.center.y, graph.center.z+100);
   var scene  = new THREE.Scene();
   var ah = new THREE.AxisHelper(200)
   var gh = new THREE.GridHelper(300, 60)
@@ -101,6 +101,14 @@ function loadGraph(results){
   console.log(scene)
   var controls = new THREE.TrackballControls(camera, renderer.domElement);
   controls.target.copy(graph.center)
+
+  // TODO target change on pan -> wrong
+  var centerMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(0.5,8,8),
+    new THREE.MeshBasicMaterial({color: 'green'})
+  )
+  centerMesh.position.copy(graph.center);
+  scene.add(centerMesh);
 
   scene.add(graph)
 
