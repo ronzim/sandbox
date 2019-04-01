@@ -80,7 +80,7 @@ function loadGraph(results){
   renderer.setSize(1173, 450);
   container.appendChild(renderer.domElement);
 
-  var camera = new THREE.PerspectiveCamera( 45, 1173 / 450, 0.1, 1000);
+  var camera = new THREE.PerspectiveCamera( 45, 1173 / 450, 0.1, 10000);
   // var camera = new THREE.OrthograpicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 0.1, 1000);
   // camera.position.x = 250;
   // camera.position.y = 250;

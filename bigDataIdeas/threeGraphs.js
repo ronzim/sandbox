@@ -1,4 +1,3 @@
-/*jshint esversion: 6 */
 const _ = require('underscore');
 
 const DIR = {
@@ -6,6 +5,63 @@ const DIR = {
   'y' : new THREE.Vector3(0,1,0),
   'z' : new THREE.Vector3(0,0,1)
 }
+
+class GridHelperCustom {
+
+  constructor( size, divisions, color1, color2 ){
+    console.log('1')
+    this.size = size || 10;
+    this.divisions = divisions || 10;
+    this.color1 = new THREE.Color( color1 !== undefined ? color1 : 0x444444 );
+    this.color2 = new THREE.Color( color2 !== undefined ? color2 : 0x888888 );
+
+  	this.center = divisions / 2;
+  	this.step = size / divisions;
+  	this.halfSize = size / 2;
+
+  	this.vertices = []
+    this.colors = [];
+
+    this.init();
+  }
+
+  init(){
+    console.log('1')
+
+    for ( var i = 0, j = 0, k = - this.halfSize; i <= this.divisions; i ++, k += this.step ) {
+
+  		this.vertices.push( - this.halfSize, 0, k, this.halfSize, 0, k );
+  		this.vertices.push( k, 0, - this.halfSize, k, 0, this.halfSize );
+      console.log('1')
+
+  		var color = i === this.center ? this.color1 : this.color2;
+      console.log('1')
+
+  		color.toArray( this.colors, j ); j += 3;
+  		color.toArray( this.colors, j ); j += 3;
+  		color.toArray( this.colors, j ); j += 3;
+  		color.toArray( this.colors, j ); j += 3;
+      console.log('1')
+  	}
+
+    console.log('1')
+
+  	var geometry = new THREE.BufferGeometry();
+  	geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( this.vertices, 3 ) );
+  	geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( this.colors, 3 ) );
+    console.log('1')
+
+  	var material = new THREE.LineBasicMaterial( { vertexColors: THREE.VertexColors } );
+    console.log('1')
+
+  	THREE.LineSegments.call( this, geometry, material );
+    console.log('1')
+  }
+
+}
+
+// GridHelperCustom.prototype = Object.create( THREE.LineSegments.prototype );
+// GridHelperCustom.prototype.constructor = GridHelperCustom;
 
 class ReferenceSystem extends THREE.Object3D {
 
@@ -20,6 +76,7 @@ class ReferenceSystem extends THREE.Object3D {
     this.origin = geometry.boundingBox.min;
     this.axis   = {};
     this.grids  = {};
+    this.dimensions = null;
 
     this.init();
   }
@@ -27,21 +84,28 @@ class ReferenceSystem extends THREE.Object3D {
   init(){
     switch(this.type){
       case 'scatter2d' :
-        this.initAxis('x');
-        this.initAxis('y');
-        this.initGrid('x','y');
+        this._computeDimensions();
+        this._initAxis('x');
+        this._initAxis('y');
+        this._initGrid('x','y');
+        // console.log(new GridHelperCustom())
         break;
       default:
         // ...
     }
   }
 
-  initAxis(dir){
-    var endPoint = this.origin.clone();
-    endPoint[dir] = this.srcGeometry.boundingBox.max[dir];
-    var axisGeometry = new THREE.LineGeometry();
+  _computeDimensions(){
+    // get source bb and expand a little, then round to 10 //TODO make variable
     var bb = this.srcGeometry.boundingBox.clone();
     bb.expandByVector(bb.getSize().multiplyScalar(0.1));
+
+    this.dimensions = bb;
+  }
+
+  _initAxis(dir){
+    var axisGeometry = new THREE.LineGeometry();
+    var bb = this.dimensions;
     var x = dir == 'x' ? bb.max.x : bb.min.x;
     var y = dir == 'y' ? bb.max.y : bb.min.y;
     var z = dir == 'z' ? bb.max.z : bb.min.z;
@@ -51,8 +115,9 @@ class ReferenceSystem extends THREE.Object3D {
       endPoint
     ]);
     axisGeometry.setPositions(plainPoints);
+    axisGeometry.computeBoundingBox();
     var axisMaterial = new THREE.LineMaterial({
-  		color: 0x000000,
+  		color: 0x666666,
   		linewidth: 0.001, // in pixels
   		// vertexColors: THREE.VertexColors,
   		// resolution:  // to be set by renderer, eventually
@@ -65,18 +130,28 @@ class ReferenceSystem extends THREE.Object3D {
     this.add(line);
   }
 
-  initGrid(label1, label2){
+  _initGrid(label1, label2){
     var dir1 = DIR[label1];
     var dir2 = DIR[label2];
-    var grid = new THREE.GridHelper();
-    grid.rotateOnAxis(dir1.cross(dir2).normalize(), Math.PI/2);
-    var x_pos = (dir1 == 'x' || dir2 == 'x') ? this.axis.x.geometry.boundingBox.x /2 : 0;
-    var y_pos = (dir1 == 'y' || dir2 == 'y') ? this.axis.y.geometry.boundingBox.y /2 : 0;
-    var z_pos = (dir1 == 'z' || dir2 == 'z') ? this.axis.z.geometry.boundingBox.z /2 : 0;
+    var biggestSize = this._getMaxComponentAbs(this.dimensions.getSize());
+    var grid = new GridHelperCustom(biggestSize, 10, 'red', 'blue');
+    console.log(grid)
+    grid.setRotationFromAxisAngle(dir1.normalize(), Math.PI/2);
+    console.log(this.axis.x.geometry.boundingBox)
+    var x_pos = (label1 == 'x' || label2 == 'x') ? this.axis.x.geometry.boundingBox.getCenter().x : 0;
+    var y_pos = (label1 == 'y' || label2 == 'y') ? this.axis.y.geometry.boundingBox.getCenter().y : 0;
+    var z_pos = (label1 == 'z' || label2 == 'z') ? this.axis.z.geometry.boundingBox.getCenter().z : 0;
+    console.log(x_pos, y_pos, z_pos);
     grid.position.set(x_pos, y_pos, z_pos);
     var label = label1 + label2;
     this.grids[label] = grid;
     this.add(grid);
+  }
+
+  _getMaxComponentAbs(vector3){
+    var max = Math.abs(vector3.x) > Math.abs(vector3.y) ?  vector3.x : vector3.y;
+    max = max > Math.abs(vector3.z) ? max : vector3.z;
+    return max;
   }
 
 }
