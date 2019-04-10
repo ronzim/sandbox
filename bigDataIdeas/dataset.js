@@ -3,17 +3,19 @@
 const _ = require('lodash');
 const uuid = require('uuid/v4');
 
-var VERBOSE = false;
+var VERBOSE = true;
 
 // TODO list
 // - get datatype for each key & getter
 // - perform data coherence: eg. all entries has same keys (use defaults)
+// - get range of values for each key (numeric)
 // - check data depth (nested objects)
 // - getters / setters for axis vars
 
 class Dataset {
 
   constructor(data) {
+    console.log(data)
     this.rawData = data;
     // number of data entries
     this._size    = _.size(data);
@@ -102,6 +104,7 @@ class Dataset {
       var currentFuns = this._filtersTree[currentId].funs;
       var currentArgs = this._filtersTree[currentId].args;
     }
+
     var newId = uuid();
     this._filtersTree[newId] = {
       parentId : currentId,
@@ -118,26 +121,29 @@ class Dataset {
   addFilter(filter, value, insertPosition) {
     if (VERBOSE) console.log('add filter', filter, value, insertPosition)
     var currId = this._activeBranchId;
-    if (VERBOSE) console.log('1', this._filtersTree, currId)
     if (!insertPosition) {
       insertPosition = this._filtersTree[currId].funs.length;
     }
     this._filtersTree[currId].funs.splice(insertPosition, 0, filterMap[filter]);
     this._filtersTree[currId].args.splice(insertPosition, 0, value);
+    if (VERBOSE) console.log(this._filtersTree)
+    this._treeIndex++;
   }
 
   runFilter() {
+    if (VERBOSE) console.time('filtering')
     var _this = this;
     var currId = this._activeBranchId;
     var funcArray = Object.values(this._filtersTree[currId].funs);
     if (VERBOSE) console.log(funcArray)
     var finalResult = funcArray.reduce( function(previousResult, fn, index) {
-      var res = fn(previousResult, this._filtersTree[currId].args[index]);
+      var res = fn(previousResult, _this._filtersTree[currId].args[index]);
       return res;
     }, this.rawData);
 
     if (VERBOSE) console.log(finalResult.length);
-    return finalResult;
+    if (VERBOSE) console.timeEnd('filtering')
+    // return finalResult;
   }
 
 }
@@ -162,6 +168,7 @@ const filterMap = {
   'keyValue'    : filterOnKeyValue,
   'keyTreshold' : filterOnKeyTreshold,
   'keyRange'    : filterOnKeyRange,
+  'keyContains' : filterOnKeyContains
   // TODO
 }
 
@@ -204,6 +211,13 @@ function filterOnKeyTreshold(data, [key, threshold, sign]) {
   return tap;
 }
 
+function filterOnKeyContains(data, [key, string]){
+  var tap = _.filter(data, function(d){
+    return d[key].includes(string);
+  });
+  return tap;
+}
+
 function fakeFilter(data, fakeArgs) {
   if (VERBOSE) console.log(data.length, 'ff', fakeArgs)
   return data;
@@ -212,39 +226,59 @@ function fakeFilter(data, fakeArgs) {
 // ===================================
 // TESTS =============================
 // ===================================
-
+// 16 sec 600 mb senza log
+// node --max-old-space-size=4096 yourFile.js
 
 const Papa = require('papaparse')
 const fs   = require('fs-extra')
 
-const file = fs.createReadStream('../material/heart.csv');
-// Papa.parse(file, {
-//     header: true,
-//     complete: function(results, file) {
-//       console.log(_.size(results.data))
-//       console.log(_.keys(results))
-//       console.log(results.meta.fields)
-//       setTimeout(initDs, 0, results.data)
-//     }
-// });
+// const file = fs.createReadStream('../material/heart.csv');
+const file = fs.createReadStream('../material/london-street.csv');
+var rawData;
+var rows = 0;
+var all = [];
 
-function initDs(rawData) {
-  var ds = new Dataset(rawData);
-  console.log('1 ------------------------------')
-  ds.addFilter('keyValue', ['sex', 1]);
-  ds.addFilter('keyValue', ['sex', 1]);
-  ds.addFilter('keyValue', ['sex', 1]);
-  ds.addFilter('keyTreshold', [' age', 50], 1);
-  console.log('2 ------------------------------')
-  var b0 = ds.activeBranch.id;
-  ds.treeIndex = 1;
-  console.log('3 ------------------------------')
-  var b1 = ds.initNewBranch();
-  console.log('4 ------------------------------')
-  console.log(b0, b1);
-  console.log(ds.activeBranch)
-  console.log(ds.treeIndex)
+function init(){
+  console.time('loading')
+  Papa.parse(file, {
+    header: true,
+    step: function(chunk, parser) {
+      rows++
+    	// console.log("Row data:", chunk.data[0]);
+    	// console.log("Row errors:", results.errors);
+      if (rows%100000 === 0) console.log('---', rows);
+      all.push(chunk.data[0])
+    },
+    complete: function(results, file) {
+      console.timeEnd('loading')
+
+      console.log(_.size(results.data))
+      console.log(_.keys(results))
+      console.log(results.meta.fields)
+      // setTimeout(initDs, 0, results.data)
+      // setTimeout(function(){
+      //   console.log('loaded')
+      //   rawData = results.data.slice();
+      //   initDs()
+      // },0)
+      setTimeout(initDs, 0)
+    }
+  });
+}
+
+init();
+var ds;
+
+function initDs() {
+  ds = new Dataset(all);
+}
+
+function getDs(){
+  return ds;
 }
 
 exports.Dataset = Dataset;
 exports.setVerbose = function(toggle) {VERBOSE = toggle};
+
+exports.test  = initDs;
+exports.getDs = getDs;
