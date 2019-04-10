@@ -1,3 +1,5 @@
+'use strict'
+
 const Papa = require('papaparse')
 const fs   = require('fs-extra')
 // const _    = require('underscore')
@@ -20,10 +22,9 @@ Papa.parse(file, {
 function init(rawData){
   console.log('init');
   var ds = new Dataset(rawData)
-
-  ds.addFilter('fake', [null]);
-  ds.addFilter('keyValue', ['sex', '1']);
-  ds.addFilter('keyTreshold', ['thalach', 120, '>']);
-  ds.filter();
+  // ds.addFilter('fake', [null]);
+  // ds.addFilter('keyValue', ['sex', '1']);
+  // ds.addFilter('keyTreshold', ['thalach', 120, '>']);
+  // ds.filter();
   console.log('filters', ds.filtersFuns);
 }

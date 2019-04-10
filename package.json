@@ -42,6 +42,7 @@
     "simple-statistics": "^7.0.2",
     "three-stl-loader": "^1.0.6",
     "underscore": "^1.9.1",
+    "uuid": "^3.3.2",
     "web-pingjs": "^1.0.1",
     "xmlhttprequest": "^1.8.0",
     "yaot": "^1.1.3"
