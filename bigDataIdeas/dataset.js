@@ -6,9 +6,9 @@ const uuid = require('uuid/v4');
 var VERBOSE = true;
 
 // TODO list
-// - get datatype for each key & getter
+// - get datatype for each key & getter DONE
 // - perform data coherence: eg. all entries has same keys (use defaults)
-// - get range of values for each key (numeric)
+// - get range of values for each key (numeric / string) DONE
 // - check data depth (nested objects)
 // - getters / setters for axis vars
 
@@ -17,6 +17,7 @@ class Dataset {
   constructor(data) {
     console.log(data)
     this.rawData = data;
+    this._filteredData = data;
     // number of data entries
     this._size    = _.size(data);
     // keys
@@ -29,8 +30,15 @@ class Dataset {
     this._filtersFuns  = [];
     this._filtersArgs  = [];
     // axis
-    this._axisKeys = {};
+    this._axisKeys = {
+      t : [],
+      w : [],
+      x : [],
+      y : [],
+      z : []
+    };
     this.initNewBranch();
+    this.initKeys();
   }
 
   // ==========
@@ -65,6 +73,10 @@ class Dataset {
     return this._treeIndex;
   }
 
+  get filteredData() {
+    return this._filteredData;
+  }
+
   // ==========
   // Setters ==
   // ==========
@@ -86,6 +98,22 @@ class Dataset {
     else{
       console.error('index must be a number');
     }
+  }
+
+  set axisKeys(axisMap) {
+    // axisMap is an object like this:
+    // {
+    //   t : 'key_on_y',
+    //   w : 'key_on_w',
+    //   x : 'key_on_x',
+    //   y : 'key_on_y',
+    //   z : 'key_on_z'
+    // }
+    var _this = this;
+    this._axisKeys = _.mapValues(_this._axisKeys, function(actualValue,axisName) {
+      var tap = axisMap[axisName] ? _.map(_this._filteredData, axisMap[axisName]) : [];
+      return tap;
+    })
   }
 
   // ====================
@@ -118,6 +146,57 @@ class Dataset {
     return newId;
   }
 
+  initKeys() {
+    console.time('initKeys')
+    var _this = this;
+    this._keys = this._keys.map(function(k,v) {
+      return {
+        label : k,
+        type  :_this._getType(_this.rawData[0][k]),
+        range : _this._getRange(k)
+      }
+    });
+    console.timeEnd('initKeys')
+  }
+
+  // get range should be different based on key type
+
+  _getType(value) {
+    var guessNumber = parseFloat(value);
+    if (!isNaN(guessNumber)){
+      // TODO check if possible latlon
+      return 'number'
+    }
+    // TODO check for dates
+    else{
+      return typeof value;
+    }
+  }
+
+  _getRange(key) {
+    console.log('============>', key)
+    console.time('getRange')
+    var values = _.map(this.rawData, key); // in lodash this is as _.pluck
+    var uniqValues = Array.from(new Set(values)); // super-fast duplicates removal
+    console.log(uniqValues.length)
+    // if number, compute max/min
+    console.timeEnd('getRange')
+    var type = this._getType(uniqValues[0]);
+    if (type == 'number'){
+      var validValues = _.without(uniqValues, '');
+      return {
+        max : _.max(validValues),
+        min : _.min(validValues)
+      }
+    }
+    else if (type == 'string'){
+      return uniqValues;
+    }
+    else {
+      return null;
+    }
+  }
+
   addFilter(filter, value, insertPosition) {
     if (VERBOSE) console.log('add filter', filter, value, insertPosition)
     var currId = this._activeBranchId;
@@ -141,9 +220,9 @@ class Dataset {
       return res;
     }, this.rawData);
 
+    this._filteredData = finalResult;
     if (VERBOSE) console.log(finalResult.length);
     if (VERBOSE) console.timeEnd('filtering')
-    // return finalResult;
   }
 
 }
@@ -211,8 +290,8 @@ function filterOnKeyTreshold(data, [key, threshold, sign]) {
   return tap;
 }
 
-function filterOnKeyContains(data, [key, string]){
-  var tap = _.filter(data, function(d){
+function filterOnKeyContains(data, [key, string]) {
+  var tap = _.filter(data, function(d) {
     return d[key].includes(string);
   });
   return tap;
@@ -238,7 +317,7 @@ var rawData;
 var rows = 0;
 var all = [];
 
-function init(){
+function init() {
   console.time('loading')
   Papa.parse(file, {
     header: true,
@@ -256,7 +335,7 @@ function init(){
       console.log(_.keys(results))
       console.log(results.meta.fields)
       // setTimeout(initDs, 0, results.data)
-      // setTimeout(function(){
+      // setTimeout(function() {
       //   console.log('loaded')
       //   rawData = results.data.slice();
       //   initDs()
@@ -271,9 +350,13 @@ var ds;
 
 function initDs() {
   ds = new Dataset(all);
+  ds.axisKeys = {
+    x : 'Reported by'
+  }
+  console.log(ds.axisKeys)
 }
 
-function getDs(){
+function getDs() {
   return ds;
 }
 
