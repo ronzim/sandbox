@@ -249,6 +249,8 @@ const filterMap = {
   'keyRange'    : filterOnKeyRange,
   'keyContains' : filterOnKeyContains
   // TODO
+  // exclude
+  
 }
 
 function filterOnKeyValue(data, [key, value]) {
