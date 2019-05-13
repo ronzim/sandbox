@@ -37,14 +37,21 @@ import os
 # management vars
 ALL_CHAT = True
 
-def getSongLinks(client):
+def getSongLinks(client, last_id):
     '''
     get links from a chat
     '''
     raw_urls = []
+    first_id = ''
     # for msg in client.iter_messages('2song1day', limit=1000):
     for msg in client.iter_messages('2song1day'): # no limits!
         # print (utils.get_display_name(msg.sender), msg.message)
+        if first_id == '':
+            first_id = msg.id
+
+        if msg.id == last_id:
+            return raw_urls, first_id
+
         if (msg.message is not None and (msg.message.count('http') > 0) ):
             print ('>>>>>>>> FOUND LINK')
             # print (utils.get_display_name(msg.sender), msg.message.split('\n')[0])
@@ -52,8 +59,9 @@ def getSongLinks(client):
             print (utils.get_display_name(msg.sender), extractLink(msg.message))
             print ('-------------------')
             raw_urls.append(extractLink(msg.message)) # keep only the link
+
     print (' ### FOUND ', len(raw_urls), ' ENTRIES ### ')
-    return raw_urls
+    return raw_urls, first_id
 
 
 def getYoutubeLink(link):
@@ -87,7 +95,7 @@ def getYoutubeLink(link):
                 return False
             query = splitted[1].split('&')[0]
             # get first google response (hoping it is a youtube link)
-            for link in search(query, tld = 'co.in', num=1, stop=10, pause=2):
+            for link in search(query, tld = 'co.in', num=1, stop=15, pause=2):
                 if 'youtube' in link:
                     print ('>>> YOUTUBE link: ',link)
                     return link
@@ -118,6 +126,29 @@ def processMsg(strMsg):
     print (youtube_link)
     return youtube_link
 
+
+def load_list(client, path_last_id, path_list_urls, all=False):
+    if os.path.isfile(path_last_id) and not all:
+        with open(path_last_id, 'rb') as f:
+            last_id = pickle.load(f)
+    else:
+        last_id = 0
+
+    urls, last_id = getSongLinks(client, last_id)
+
+    if os.path.isfile(path_list_urls):
+        with open(path_list_urls, 'rb') as f:
+            urls_old = pickle.load(f)
+    else:
+        urls_old = []
+
+    with open(path_list_urls, 'wb') as f:
+        pickle.dump(list(set(urls).union(set(urls_old))), f)
+    with open(path_last_id, 'wb') as f:
+        pickle.dump(last_id, f)
+
+    return urls
+
 # download feature --------------------------
 
 class MyLogger(object):
@@ -134,7 +165,7 @@ def my_hook(d):
 
 ydl_opts = {
     # 'outtmpl' : './Songs/%(title)s.%(ext)s',
-    'outtmpl' : './Songs/%(artist)s - %(title)s.%(ext)s',
+    'outtmpl' : './Songs/%(title)s.%(ext)s',
     # 'outtmpl' : '/media/mattia/DATA/2songs1day_7.2.19/%(artist)s - %(title)s.%(ext)s',
     'format': 'bestaudio/best',
     'postprocessors': [{
@@ -200,24 +231,19 @@ if __name__ == '__main__':
             print('>>> getting dialog', dialog.name)
 
         path_list_urls = 'urls.pkl'
+        path_last_id = 'id.pkl'
 
         if os.path.isfile(path_list_urls):
             scarica = input("Vuoi aggiornare la lista? [Y/N]")
-
             if scarica.lower() not in ['y','n']:
                 sys.exit()
             elif scarica.lower() == 'y':
-                urls = getSongLinks(client)
-                with open(path_list_urls, 'wb') as f:
-                    pickle.dump(urls, f)
+                urls = load_list(client, path_last_id, path_list_urls)
             else:
                 with open(path_list_urls, 'rb') as f:
                     urls = pickle.load(f)
         else:
-            urls = getSongLinks(client)
-            with open(path_list_urls, 'wb') as f:
-                pickle.dump(urls, f)
-
+            urls = load_list(client, path_last_id, path_list_urls, all=True)
 
         riscarica = input("Vuoi scaricare le canzoni già presenti nella cartella? [Y/N]")
         if riscarica.lower() not in ['y','n']:
@@ -230,9 +256,9 @@ if __name__ == '__main__':
         outfile = open('song_links.txt', 'a')
         # outfile.write('########################## INIT NEW SESSION ################')
         # with open('./songs.csv', 'wb', newline='') as myfile:
-        with open('./songs.csv', 'w') as myfile:
-            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-            wr.writerow(urls)
+        # with open('./songs.csv', 'w') as myfile:
+        #     wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+        #     wr.writerow(urls)
 
         ok = 0
         nok = 0
@@ -242,32 +268,59 @@ if __name__ == '__main__':
             if entry:
                 print ('GETTING LINK FROM', entry)
                 youtube_link = getYoutubeLink(entry)
+
+                # downloading errors
+                # https://music.youtube.com/watch?v=c96Ahl9gT-Y&feature=share
+                # https://music.youtube.com/watch?v=I16AXaA9ots&feature=share
+                # https://music.youtube.com/watch?v=_Ca6AYFZtL0&feature=share
+                # https://www.google.com/search?kgmid=/g/1q5j7v47d&hl=it-IT&kgs=d565f8c0329e3a7d&q=zucchero+cos%C3%AC+celeste&shndl=0&source=sh/x/kp&entrypoint=sh/x/kp
+                # https://www.shazam.com/track/422751761/cry-on-my-guitar
+
                 if youtube_link:
+                    outfile.write('\n')
                     outfile.write(youtube_link + '\n')
                     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                         try:
                             result = ydl.extract_info("{}".format(youtube_link), download=False)
+                            track =  result.get("title", '') if result.get("track", '') is None else result.get("track", '')
                             title =  '' if result.get("title", '') is None else result.get("title", '')
-                            artist = '' if result.get("artist", '') is None else result.get("artist", '')
-                            file = ydl.prepare_filename(result)
-                            file = os.path.splitext(file)[:-1][0]+'.mp3'
+                            artist = result.get("uploader", '') if result.get("artist", '') is None else result.get("artist", '')
+                            artist = artist.replace(' - Topic','')
 
-                            if os.path.isfile(file) and not RISCARICA:
+                            # file = ydl.prepare_filename(result)
+                            # file = os.path.splitext(file)[:-1][0]+'.mp3'
+
+                            print(title,artist)
+
+                            if any(i in track.lower() for i in artist.lower().split(' ')):
+                                name_file = './Songs/'+track+'.mp3'
+                            else:
+                                name_file = './Songs/'+artist+' - '+track+'.mp3'
+
+                            if os.path.isfile(name_file) or os.path.isfile('./Songs/'+title+'.mp3') and not RISCARICA:
                                 print ('song already present')
+                                outfile.write('# already present #\n')
+                                ok+=1
                                 continue
 
                             with open('dowloaded_song.csv', 'a') as f:
-                                f.write(';'.join([title,artist,youtube_link,entry]))
+                                f.write(';'.join([track,artist,youtube_link,entry]))
                                 f.write('\n')
 
                             print ('DOWNLOADING', youtube_link)
                             ydl.download([youtube_link])
+
+                            try:
+                                os.rename('./Songs/'+title+'.mp3', name_file)
+                            except:
+                                pass
+
                             ok+=1
-                            outfile.write('\n# DOWNLOAD OK #\n')
+                            outfile.write('# DOWNLOAD OK #\n')
                         except:
                             print ('error, continue')
                             nok+=1
-                            outfile.write('\n! DOWNLOAD ERROR !\n')
+                            outfile.write('! DOWNLOAD ERROR !\n')
                             continue
 
         outfile.write('#################### END PROCESSING #####################')
