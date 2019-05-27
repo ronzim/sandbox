@@ -1,8 +1,12 @@
 var createTree = require('yaot');
 var _ = require('underscore');
 
-var LandmarkTransform = window.vtk.Common.Transform.vtkLandmarkTransform;
-var Points = window.vtk.Common.Core.vtkPoints;
+// var LandmarkTransform = vtk.Common.Transform.vtkLandmarkTransform;
+// var Points = vtk.Common.Core.vtkPoints;
+
+var LandmarkTransform = window.vtk.vtkLandmarkTransform;
+var Points = window.vtk.vtkPoints;
+
 console.log(LandmarkTransform)
 console.log(Points)
 const Mode = {
@@ -13,14 +17,14 @@ const Mode = {
 
 var srcPts = Points.newInstance();
 srcPts.setNumberOfPoints(3);
-srcPts.setPoint(0, 10,10,10);
-srcPts.setPoint(1, 20,20,20);
-srcPts.setPoint(2, 30,30,30);
+srcPts.setPoint(0, 4,10,10);
+srcPts.setPoint(1, 20,4,20);
+srcPts.setPoint(2, 30,4,30);
 var trgPts = Points.newInstance();
 trgPts.setNumberOfPoints(3);
-trgPts.setPoint(0, -10,-10,-10);
-trgPts.setPoint(1, -20,-20,-20);
-trgPts.setPoint(2, -30,-30,-30);
+trgPts.setPoint(0, -10,-4,-10);
+trgPts.setPoint(1, -4,-20,-20);
+trgPts.setPoint(2, -30,-30,-4);
 
 console.log(srcPts.getPoint(0))
 console.log(trgPts.getPoint(0))
@@ -34,8 +38,8 @@ console.log(transform.getSourceLandmark().getNumberOfPoints())
 console.log(transform.getTargetLandmark().getNumberOfPoints())
 
 transform.update();
-// const transformMatrix = transform.getMatrix();
-// console.log(transformMatrix)
+const transformMatrix = transform.getMatrix();
+console.log('============================== >>>>>>>>>>>>>', transformMatrix)
 
 // ============================================
 // Remove duplicates from vertices array ======

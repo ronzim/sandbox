@@ -201,15 +201,18 @@ function vtkLandmarkTransform(publicAPI, model) {
         model.sourceLandmark.getPoint(1, s1);
         model.targetLandmark.getPoint(1, t1);
 
-        let ds;
-        let dt;
+        let ds = [];
+        let dt = [];
         let rs = 0;
         let rt = 0;
+
+        console.log('fuck this shit', s1, s0, ds, dt)
+
         for (let i = 0; i < 3; i++) {
           ds[i] = s1[i] - s0[i]; // vector between points
           rs = ds[i] * ds[i] + rs;
           dt[i] = t1[i] - t0[i];
-          rt = dt[i] * dt[i] + rt;
+          dt = dt[i] * dt[i] + rt;
         }
 
         // normalize the two vectors
