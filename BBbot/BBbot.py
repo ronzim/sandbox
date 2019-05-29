@@ -76,16 +76,30 @@ def registerEntry(bot, msg):
     global current_value
     current_value = None
 
+def delete_last(bot, update):
+    previus_data = loadFile()
+    if len(previus_data) == 0:
+        bot.send_message(chat_id=update.message.chat_id, text='storage empty')
+        return
+    del previus_data[-1]
+    global storageFile
+    with open(storageFile, 'w+') as outfile:
+        json.dump(previus_data, outfile)
+    bot.send_message(chat_id=update.message.chat_id, text='deleted')
+
 categories = [
     'benzina',
     'auto',
     'pranzo',
     'cena/ape',
+    'postcena',
     'acquisti',
     'cane',
+    'viaggi',
     'altro',
     '/getstorage',
-    '/clearstorage'
+    '/clearstorage',
+    '/delete_last'
 ]
 
 def handle_msg(bot, update):
@@ -119,6 +133,8 @@ getstorage_handler = CommandHandler('getstorage', read_storage)
 dispatcher.add_handler(getstorage_handler)
 clearstorage_handler = CommandHandler('clearstorage', clearFile)
 dispatcher.add_handler(clearstorage_handler)
+deletelast_handler = CommandHandler('deletelast', delete_last)
+dispatcher.add_handler(deletelast_handler)
 msg_handler = MessageHandler(Filters.text, handle_msg)
 dispatcher.add_handler(msg_handler)
 unknown_handler = MessageHandler(Filters.command, unknown)
