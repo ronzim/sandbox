@@ -236,10 +236,9 @@ function toSpaceCoord(value){
 var boundary_xy = [];
 
 function test(scene){
-  var texture = new THREE.TextureLoader().load('/Users/orobix/Projects/flatShoe/input/upper.png');
-  texture.center = new THREE.Vector2(1000, 1000)
+  var loader = new THREE.TextureLoader()
+  loader.load('/Users/orobix/Projects/flatShoe/input/upper.png', (texture) => {
 
-  setTimeout(function(){
     var imagedata = getImageData( texture.image );
     console.log(imagedata);
     // vertically
@@ -301,8 +300,15 @@ function test(scene){
     }
 
     var dataTexture = new THREE.DataTexture( new Uint8Array(imagedata.data), imagedata.width, imagedata.height, THREE.RGBAFormat );
-    dataTexture.needsUpdate = true
 
+    var m4 = new THREE.Matrix4().fromArray(transformMatrix)
+    var rotation = new THREE.Matrix4().extractRotation(m4);
+    console.log(rotation)
+    dataTexture.center      = new THREE.Vector2(0.5, 0.5);
+    // dataTexture.rotation    = 45*THREE.Math.DEG2RAD
+    dataTexture.rotation    = new THREE.Vector2(1,0).applyMatrix3(rotation).angle()
+    console.log(dataTexture.rotation)
+    dataTexture.needsUpdate = true
     console.log(texture)
     console.log(dataTexture)
 
@@ -361,7 +367,8 @@ function test(scene){
 
     console.log(scene)
 
-  }, 500)
+  })
+
 }
 
 exports.test = test;
