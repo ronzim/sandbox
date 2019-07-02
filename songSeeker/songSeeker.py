@@ -58,7 +58,7 @@ def getSongLinks(client, last_id):
             # print (msg.message)
             print (utils.get_display_name(msg.sender), extractLink(msg.message))
             print ('-------------------')
-            raw_urls.append(extractLink(msg.message)) # keep only the link
+            raw_urls.append((extractLink(msg.message),msg.date.strftime("%y-%m-%d"))) # keep only the link
 
     print (' ### FOUND ', len(raw_urls), ' ENTRIES ### ')
     return raw_urls, first_id
@@ -263,18 +263,26 @@ if __name__ == '__main__':
         ok = 0
         nok = 0
 
-        for counter, entry in enumerate(urls):
+        urls = sorted(urls, key=lambda x: x[1])
+
+        for counter, elem in enumerate(urls):
+            entry, data = elem
             print ('##', counter, ' out of ', len(urls))
             if entry:
                 print ('GETTING LINK FROM', entry)
                 youtube_link = getYoutubeLink(entry)
 
                 # downloading errors
+                # https://music.youtube.com/watch?v=6vWhZHmBEOk&feature=share
+                # https://music.youtube.com/watch?v=-zkmGxisc9c&feature=share
+                # https://music.youtube.com/watch?v=-RONOu7llRY&feature=share
+                # https://youtu.be/XmSdTa9kaiQ
+                # https://music.youtube.com/watch?v=LJcMu_Py7V0&feature=share
+                # https://music.youtube.com/watch?v=5Vk1D54UAWc&feature=share
                 # https://music.youtube.com/watch?v=c96Ahl9gT-Y&feature=share
-                # https://music.youtube.com/watch?v=I16AXaA9ots&feature=share
                 # https://music.youtube.com/watch?v=_Ca6AYFZtL0&feature=share
-                # https://www.google.com/search?kgmid=/g/1q5j7v47d&hl=it-IT&kgs=d565f8c0329e3a7d&q=zucchero+cos%C3%AC+celeste&shndl=0&source=sh/x/kp&entrypoint=sh/x/kp
-                # https://www.shazam.com/track/422751761/cry-on-my-guitar
+                # https://music.youtube.com/watch?v=I16AXaA9ots&feature=share
+
 
                 if youtube_link:
                     outfile.write('\n')
@@ -284,18 +292,21 @@ if __name__ == '__main__':
                             result = ydl.extract_info("{}".format(youtube_link), download=False)
                             track =  result.get("title", '') if result.get("track", '') is None else result.get("track", '')
                             title =  '' if result.get("title", '') is None else result.get("title", '')
+                            title = (title).replace('/','_')
                             artist = result.get("uploader", '') if result.get("artist", '') is None else result.get("artist", '')
                             artist = artist.replace(' - Topic','')
 
                             # file = ydl.prepare_filename(result)
                             # file = os.path.splitext(file)[:-1][0]+'.mp3'
 
-                            print(title,artist)
+                            print(data, title,artist)
 
                             if any(i in track.lower() for i in artist.lower().split(' ')):
-                                name_file = './Songs/'+track+'.mp3'
+                                name_file = (data+'_'+track+'.mp3').replace('/','_')
                             else:
-                                name_file = './Songs/'+artist+' - '+track+'.mp3'
+                                name_file = (data+'_'+artist+' - '+track+'.mp3').replace('/','_')
+
+                            name_file = './Songs/'+name_file
 
                             if os.path.isfile(name_file) or os.path.isfile('./Songs/'+title+'.mp3') and not RISCARICA:
                                 print ('song already present')
@@ -304,7 +315,7 @@ if __name__ == '__main__':
                                 continue
 
                             with open('dowloaded_song.csv', 'a') as f:
-                                f.write(';'.join([track,artist,youtube_link,entry]))
+                                f.write(';'.join([data,track,artist,youtube_link,entry]))
                                 f.write('\n')
 
                             print ('DOWNLOADING', youtube_link)
