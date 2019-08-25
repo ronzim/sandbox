@@ -52,13 +52,15 @@ def getSongLinks(client, last_id):
         if msg.id == last_id:
             return raw_urls, first_id
 
-        if (msg.message is not None and (msg.message.count('http') > 0) ):
-            print ('>>>>>>>> FOUND LINK')
-            # print (utils.get_display_name(msg.sender), msg.message.split('\n')[0])
-            # print (msg.message)
-            print (utils.get_display_name(msg.sender), extractLink(msg.message))
-            print ('-------------------')
-            raw_urls.append((extractLink(msg.message),msg.date.strftime("%y-%m-%d"))) # keep only the link
+        if int(msg.date.strftime("%y")) == 19 and  int(msg.date.strftime("%m")) >= 7 :
+
+            if (msg.message is not None and (msg.message.count('http') > 0) ):
+                print ('>>>>>>>> FOUND LINK')
+                # print (utils.get_display_name(msg.sender), msg.message.split('\n')[0])
+                # print (msg.message)
+                print (utils.get_display_name(msg.sender), extractLink(msg.message))
+                print ('-------------------')
+                raw_urls.append((extractLink(msg.message),msg.date.strftime("%y-%m-%d"))) # keep only the link
 
     print (' ### FOUND ', len(raw_urls), ' ENTRIES ### ')
     return raw_urls, first_id
@@ -193,33 +195,33 @@ if __name__ == '__main__':
     # RUN DOWNLOADER ON SINGLE INCOMING MESSAGE  =====
     # ================================================
 
-    if not ALL_CHAT:
-        @client.on(events.NewMessage)
-        async def handler(event):
-            print (" ------- RECEIVED NEW MESSAGE ------- ")
-            print ('chat id: ', event.input_chat.chat_id)
-            print ('raw msg: ', event.raw_text)
-            if (event.input_chat.chat_id == 328985728 and 'http' in event.raw_text):
-                # if message contains a link
-                youtube_link = processMsg(event.raw_text)
-                print ('>>> youtube_link', youtube_link)
-                if (youtube_link != False):
-                    outfile = open('song_links.txt', 'a+')
-                    outfile.write(youtube_link + '\n')
-                    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                        try:
-                            print ('DOWNLOADING', youtube_link)
-                            ydl.download([youtube_link])
-                            outfile.write('DOWNLOAD OK\n')
-                            print('DOWNLOADED!')
-                            await event.reply('download success')
-                        except:
-                            outfile.write('ERROR DOWNLOADING\n')
-                            print ('error downloading')
-                    outfile.write('####################')
-                    outfile.close()
-
-        client.run_until_disconnected()
+    # if not ALL_CHAT:
+    #     @client.on(events.NewMessage)
+    #     async def handler(event):
+    #         print (" ------- RECEIVED NEW MESSAGE ------- ")
+    #         print ('chat id: ', event.input_chat.chat_id)
+    #         print ('raw msg: ', event.raw_text)
+    #         if (event.input_chat.chat_id == 328985728 and 'http' in event.raw_text):
+    #             # if message contains a link
+    #             youtube_link = processMsg(event.raw_text)
+    #             print ('>>> youtube_link', youtube_link)
+    #             if (youtube_link != False):
+    #                 outfile = open('song_links.txt', 'a+')
+    #                 outfile.write(youtube_link + '\n')
+    #                 with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+    #                     try:
+    #                         print ('DOWNLOADING', youtube_link)
+    #                         ydl.download([youtube_link])
+    #                         outfile.write('DOWNLOAD OK\n')
+    #                         print('DOWNLOADED!')
+    #                         await event.reply('download success')
+    #                     except:
+    #                         outfile.write('ERROR DOWNLOADING\n')
+    #                         print ('error downloading')
+    #                 outfile.write('####################')
+    #                 outfile.close()
+    #
+    #     client.run_until_disconnected()
 
     # ================================================
     # RUN DOWNLOADER ON ALL CHAT MESSAGES  ===========
@@ -245,7 +247,7 @@ if __name__ == '__main__':
         else:
             urls = load_list(client, path_last_id, path_list_urls, all=True)
 
-        riscarica = input("Vuoi scaricare le canzoni già presenti nella cartella? [Y/N]")
+        riscarica = input("Vuoi scaricare le canzoni gia presenti nella cartella? [Y/N]")
         if riscarica.lower() not in ['y','n']:
             sys.exit()
         elif riscarica.lower() == 'y':
