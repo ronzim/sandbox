@@ -24,6 +24,7 @@ import pickle
 import sys
 import os
 import csv
+import plotly.graph_objects as pl
 
 SEND_CHAT = False
 
@@ -73,7 +74,7 @@ if __name__ == '__main__':
         if raw_msg is not None and raw_msg.message is not None:
             msg = raw_msg.message.split(',');
 
-            if msg[0] == '#spese' :
+            if msg[0].count('#spese') :
                 n += 1
                 print (n, '-', msg[1], msg[2], msg[3])
 
@@ -127,3 +128,6 @@ if __name__ == '__main__':
     print (tot, '€')
     out_msg = 'total: ' + str(tot)
     if SEND_CHAT : client.send_message("Norway", out_msg)
+
+    fig = pl.Figure(data=pl.Bar(x=list(expenses.keys()), y=list(expenses.values())))
+    fig.write_html('graph.html', auto_open=True)
