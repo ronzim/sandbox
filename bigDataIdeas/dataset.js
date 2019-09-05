@@ -2,10 +2,12 @@
 
 const _ = require('lodash');
 const uuid = require('uuid/v4');
+const filtersTree = require('./filtersTree');
 
 var VERBOSE = true;
 
 // TODO list
+// - integrate new Tree object
 // - get datatype for each key & getter DONE
 // - perform data coherence: eg. all entries has same keys (use defaults)
 // - get range of values for each key (numeric / string) DONE
@@ -19,9 +21,9 @@ class Dataset {
     this.rawData = data;
     this._filteredData = data;
     // number of data entries
-    this._size    = _.size(data);
+    this._size = _.size(data);
     // keys
-    this._keys    = _.keys(data[0]);
+    this._keys = _.keys(data[0]);
     this.numberOfKeys = this.keys.length;
     // filters tree
     this._filtersTree  = {};
@@ -240,69 +242,7 @@ class Dataset {
 //     }
 //   }, []);
 
-// FILTERS
 
-const filterMap = {
-  'fake'        : fakeFilter,
-  'keyValue'    : filterOnKeyValue,
-  'keyTreshold' : filterOnKeyTreshold,
-  'keyRange'    : filterOnKeyRange,
-  'keyContains' : filterOnKeyContains
-  // TODO
-  // exclude
-  
-}
-
-function filterOnKeyValue(data, [key, value]) {
-  if (VERBOSE) console.log(data.length, '--', key, value);
-  var tap = _.filter(data, function(d) {
-    return d[key] === value;
-  });
-  return tap;
-}
-
-function filterOnKeyRange(data, [key, value1, value2]) {
-  if (VERBOSE) console.log(data.length, '--', key, value1, value2);
-  var low  = value1 < value2 ? value1 : value2;
-  var high = value1 > value2 ? value1 : value2;
-  var tap = _.filter(data, function(d) {
-    return d[key] >= low && d[key] <= high;
-  });
-  return tap;
-}
-
-function filterOnKeyTreshold(data, [key, threshold, sign]) {
-  if (VERBOSE) console.log(data.length, '--', key, threshold, sign);
-  var tap = _.filter(data, function(d) {
-    var res;
-    if (sign == '>') {
-      res = parseFloat(d[key]) > threshold;
-    }
-    else if (sign == '<') {
-      res = parseFloat(d[key]) < threshold;
-    }
-    else if (sign == '>') {
-      res = parseFloat(d[key]) >= threshold;
-    }
-    else if (sign == '<') {
-      res = parseFloat(d[key]) <= threshold;
-    }
-    return res;
-  })
-  return tap;
-}
-
-function filterOnKeyContains(data, [key, string]) {
-  var tap = _.filter(data, function(d) {
-    return d[key].includes(string);
-  });
-  return tap;
-}
-
-function fakeFilter(data, fakeArgs) {
-  if (VERBOSE) console.log(data.length, 'ff', fakeArgs)
-  return data;
-}
 
 // ===================================
 // TESTS =============================
