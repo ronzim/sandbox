@@ -5,6 +5,8 @@ const ipcMain     = electron.ipcMain
 
 // Module to control application life.
 const app = electron.app
+app.commandLine.appendSwitch("--experimental-modules")
+console.log(app)
 // Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow
 
