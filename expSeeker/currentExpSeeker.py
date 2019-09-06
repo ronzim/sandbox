@@ -16,7 +16,7 @@ expenses = {}
 
 def add_expense(type, val):
     if type in list(expenses.keys()):
-        expenses[cat] += val
+        expenses[type] += val
         new = False
     else:
         expenses[type] = val
