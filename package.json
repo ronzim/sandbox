@@ -39,6 +39,7 @@
     "papaparse": "^4.6.3",
     "ping.js": "^0.2.1",
     "plotly.js-dist": "^1.45.2",
+    "read-json-stream": "^1.1.0",
     "simple-statistics": "^7.0.2",
     "three-stl-loader": "^1.0.6",
     "underscore": "^1.9.1",

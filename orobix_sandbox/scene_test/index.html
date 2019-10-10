@@ -27,8 +27,8 @@
     <script src="../threejs-libs/LineMaterial.js"></script>
 
 
-    <!-- <script src="./lib/vtk.js"></script> -->
-    <script src="../index_.js"></script>
+    <script src="../vtk.js"></script>
+    <!-- <script src="../vtk-js/Sources/vtk.js"></script> -->
 
     <!-- STL loader-->
     <script src="lib/stl-loader.js"></script>
@@ -47,6 +47,7 @@
     var pjson    = require("./package.json");
     var rootPath = pjson.dev ? process.cwd() : process.resourcesPath + "/app/";
     var renderer = require( path.join( rootPath, 'js','gui','renderer' ) );
+
     renderer.render();
   </script>
   <script src="lib/bootstrap.js"></script>

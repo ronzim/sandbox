@@ -1,11 +1,12 @@
 var createTree = require('yaot');
 var _ = require('underscore');
 
-// var LandmarkTransform = vtk.Common.Transform.vtkLandmarkTransform;
-// var Points = vtk.Common.Core.vtkPoints;
+// var LandmarkTransform = window.vtk.Common.Transform.vtkLandmarkTransform;
+// var Points = window.vtk.Common.Core.vtkPoints;
+// var vtk = require('../../vtk-js/Sources/index.mjs')
 
-var LandmarkTransform = window.vtk.vtkLandmarkTransform;
-var Points = window.vtk.vtkPoints;
+var LandmarkTransform = vtk.Common.Transform.vtkLandmarkTransform;
+var Points = vtk.Common.Core.vtkPoints;
 
 console.log(LandmarkTransform)
 console.log(Points)
