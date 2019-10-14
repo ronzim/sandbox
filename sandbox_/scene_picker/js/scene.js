@@ -31,14 +31,15 @@ var initScene = function() {
   scene.add(camera);
 
   var control = new THREE.TrackballControls( camera, renderer.domElement );
+  control.rotateSpeed = 3;
 
-  var light = new THREE.AmbientLight( 0x555555, 1 );
+  var light = new THREE.AmbientLight( 0xffffff, 0.4 );
   scene.add( light );
-  var directionalLight = new THREE.PointLight( 0xffffff, 1 );
+  var directionalLight = new THREE.PointLight( 0xffffff, 0.2 );
   directionalLight.position.set (0,50,50);
   scene.add( directionalLight );
-  var pointLight = new THREE.PointLight( 0xffffff, 0.1 );
-  pointLight.position.set (0,200,200);
+  var pointLight = new THREE.PointLight( 0xffffff, 0.5 );
+  pointLight.position.set (100,100,100);
   scene.add( pointLight );
 
   var gridPlane = new THREE.GridHelper(30,50);
@@ -56,10 +57,15 @@ var initScene = function() {
     var loader = new STLLoader();
     loader.load('./resources/shoe.stl', function(geometry) {
 
-      var material = new THREE.MeshBasicMaterial({wireframe:false});
+      var material = new THREE.MeshPhongMaterial({wireframe:false, color:'white'});
       var mesh = new THREE.Mesh(geometry, material);
+
+      geometry.computeBoundingBox();
+      var center = geometry.boundingBox.getCenter().negate();
+      var centeringMatrix = new THREE.Matrix4().makeTranslation(center.x, center.y, center.z);
+      console.log(centeringMatrix)
+      geometry.applyMatrix(centeringMatrix);
       mesh.name = 'shoe';
-      mesh.material.vertexColors = THREE.VertexColors;
       mesh.material.needsUpdate = true;
 
       scene.add(mesh);

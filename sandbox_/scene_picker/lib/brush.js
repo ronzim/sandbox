@@ -4,13 +4,6 @@ var uuid       = require('uuid');
 var _          = require('underscore');
 var createTree = require(path.join('..', 'lib', 'yaot'));
 
-// Local modules
-// var api          = require(path.join(rootPath, 'js', 'api', 'operaAPI'));
-// var imageUtils   = require(path.join(rootPath, 'js', 'scenes', 'utils', 'imageUtils'));
-// var devUtils     = require(path.join(rootPath, 'resources', 'js', 'devUtils'));
-// var panorexUtils = require(path.join(rootPath, 'js', 'scenes', 'utils', 'panorexUtils'));
-// var vtkAPI       = require(utils.getNAPIvtkAPIPath());
-
 // const maxLength = 100000000;
 const baseValue = 99999;
 const color     = {r:1.0, g:0.0, b:0.0}; // RED BRUSH
@@ -23,6 +16,7 @@ var originalColor = null;
 var currentFlag   = 0;
 var counters      = {};
 var brushedModel  = null;
+var splines       = [];
 
 
 /*  ================================================================  */
@@ -65,90 +59,25 @@ var resetOctree = function() {
 // ============================================
 // Get brushed vertices =======================
 // ============================================
-var draw = function(ray, mesh) {
-  // console.profile('draw');
-  var currentId = points.indexOf(baseValue);
-  var oldId = currentId;
+var draw = function(int, mesh) {
 
-  console.time('intersect')
-  var intersects = ray.intersectObject(mesh);
-  if (intersects.length > 0) {
-    console.timeEnd('intersect')
-    var refNormal  = new THREE.Vector3(intersects[0].face.normal.x, intersects[0].face.normal.y, intersects[0].face.normal.z);
-    var radius = 3.0; // TODO input
-    var matches = octree[mesh.name].intersectSphere(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z, radius);
-    if (matches.length > 0) {
+  var radius = 3.0; // TODO input
+  var matches = octree[mesh.name].intersectSphere(int.point.x, int.point.y, int.point.z, radius);
+  if (matches.length > 0) {
 
-      _.each(matches, function applyColor(pointId, k) {
-        // check normal : get only points on the same surface side (same normal as intersection point and projection under threshold)
-        var n = new THREE.Vector3(mesh.geometry.attributes.normal.array[pointId], mesh.geometry.attributes.normal.array[pointId+1], mesh.geometry.attributes.normal.array[pointId+2]);
-        var dot_n = refNormal.clone().dot(n);
-        var d = new THREE.Vector3(mesh.geometry.attributes.position.array[pointId],
-                                  mesh.geometry.attributes.position.array[pointId+1],
-                                  mesh.geometry.attributes.position.array[pointId+2])
-                          .sub(new THREE.Vector3(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z));
-        var dot_d = refNormal.clone().dot(d);
-        // if normal is opposite OR point is far from picking plane OR point has already a flag (avoid duplicates), return
-        // if ( dot_n < 0.8 || dot_d > radius/10 || mesh.geometry.attributes.flags.array[pointId/3] <= currentFlag) {
-        //   return;
-        // }
+    _.each(matches, function applyColor(pointId, k) {
 
-        // if (mesh.geometry.attributes.color.array[pointId] == color.r){
-        //   // console.log('already red')
-        //   // avoid duplicates
-        //   return;
-        // }
+        mesh.geometry.attributes.color.array[pointId]   = color.r;
+        mesh.geometry.attributes.color.array[pointId+1] = color.g;
+        mesh.geometry.attributes.color.array[pointId+2] = color.b;
 
-        // var getCells = false;
-        // if (!getCells){
-          // store single vertex
-          // update color
-          mesh.geometry.attributes.color.array[pointId]   = color.r;
-          mesh.geometry.attributes.color.array[pointId+1] = color.g;
-          mesh.geometry.attributes.color.array[pointId+2] = color.b;
-          // store coordinates
-          // points[currentId] = mesh.geometry.attributes.position.array[pointId];
-          // points[currentId+1] = mesh.geometry.attributes.position.array[pointId+1];
-          // points[currentId+2] = mesh.geometry.attributes.position.array[pointId+2];
-          // store normals
-          // normals[currentId] = mesh.geometry.attributes.normal.array[pointId];
-          // normals[currentId+1] = mesh.geometry.attributes.normal.array[pointId+1];
-          // normals[currentId+2] = mesh.geometry.attributes.normal.array[pointId+2];
-          // set flag
-          // mesh.geometry.attributes.flags.array[pointId/3] = currentFlag;
-          // CHECK if this is used
-          currentId+=3;
-        // }
-        // else{
-        //   // update also other vertices in the same cell
-        //   if (getCells){
-        //     var completed = completeCells(points, mesh, pointId, currentFlag);
-        //     if (!completed){
-        //       return;
-        //     }
-        //     mesh   = completed.mesh;
-        //     points = completed.points;
-        //   }
-        // }
+    });
 
-        // dev
-        // devUtils.renderPoint('r3D', new THREE.Vector3(points[currentId], points[currentId+1], points[currentId+2]), 'p_'+currentId.toString(), 'yellow', 0.03);
-
-      });
-      // DEV
-      // mesh.geometry.attributes.color.array = new Float32Array(mesh.geometry.index.array.length);
-      // mesh.geometry.attributes.color.array.fill(0.5);
-      // DEV
-    }
-    mesh.geometry.attributes.flags.needsUpdate = true;
-    mesh.geometry.attributes.color.needsUpdate = true;
-    mesh.geometry.colorsNeedUpdate = true;
   }
+  mesh.geometry.attributes.flags.needsUpdate = true;
+  mesh.geometry.attributes.color.needsUpdate = true;
+  mesh.geometry.colorsNeedUpdate = true;
 
-  // update counters for each flag (avoid a performance-killing loop when undo)
-  counters[currentFlag] = counters[currentFlag] === undefined ? (currentId-oldId) : counters[currentFlag]+(currentId-oldId);
-
-  // console.profileEnd('draw');
 };
 
 function placeSeeds(ray, mesh, scene) {
@@ -156,12 +85,13 @@ function placeSeeds(ray, mesh, scene) {
   var intersects = ray.intersectObject(mesh);
   if (intersects.length > 0){
     if (!pointer){
-      pointer = new THREE.Mesh(new THREE.SphereGeometry(1), new THREE.MeshPhongMaterial({color:'red'}));
+      pointer = new THREE.Mesh(new THREE.SphereGeometry(1), new THREE.MeshPhongMaterial({color:'green'}));
       pointer.name = 'pointer'
       scene.add(pointer)
     }
     pointer.position.copy(intersects[0].point);
-    console.log(intersects[0].point)
+    // draw(intersects[0], mesh);
+    updateSpline(intersects[0].point, scene);
   }
   else{
     scene.remove(pointer);
@@ -175,11 +105,35 @@ function updateSeed(scene, zoomLevel) {
   }
 }
 
-// get normals
-function getNormalsData(){
-  // remove exceeding values
-  cleanedNormals = normals.subarray(0, normals.indexOf(baseValue));
-  return cleanedNormals;
+function initSpline(point, scene){
+  var curve = new THREE.CatmullRomCurve3([]);
+  splines.push(curve);
+}
+
+function updateSpline(point, scene){
+  splines[splines.length-1].points.push(point);
+  renderCurve(splines[splines.length-1], scene)
+}
+
+function renderCurve(curve, scene){
+  if (curve.points.length < 2){
+    return;
+  }
+
+  var points = curve.getPoints(500);
+  var spline = scene.getObjectByName('spline' + splines.length);
+
+  if (spline){
+    spline.geometry = new THREE.BufferGeometry().setFromPoints(points);
+  }
+  else{
+    var geometry = new THREE.BufferGeometry().setFromPoints(points);
+    var material = new THREE.LineBasicMaterial({color : 0x000000, depthTest:false});
+    var curveObject = new THREE.Line(geometry, material);
+    curveObject.name = 'spline' + splines.length;
+    scene.add(curveObject);
+  }
+
 }
 
 var toggleCADBrush = function(renderer, scene, controls, dataDisplayName, toggle, cb) {
@@ -188,12 +142,9 @@ var toggleCADBrush = function(renderer, scene, controls, dataDisplayName, toggle
   controls.addEventListener('end', updateZoomLevel)
 
   if (toggle && dataDisplayName) {
-    console.time("enable octree");
     if (!octree[dataDisplayName]) {
       setOctree(scene, dataDisplayName);
     }
-    console.timeEnd("enable octree");
-    console.time("enable color geometry");
     if (!mesh.geometry.attributes.color && octree[dataDisplayName]) {
       originalColor = mesh.material.color;
       mesh.material.color = new THREE.Color(0xf5f5f5);
@@ -203,17 +154,11 @@ var toggleCADBrush = function(renderer, scene, controls, dataDisplayName, toggle
       mesh.geometry.attributes.color.needsUpdate = true;
       mesh.geometry.colorsNeedUpdate = true;
       mesh.material.needsUpdate = true;
-      // add flag array
-      var flags = new Float32Array(mesh.geometry.attributes.position.array.length/3).fill(undefined);
-      mesh.geometry.addAttribute('flags', new THREE.BufferAttribute(flags, 1));
-      mesh.geometry.attributes.flags.needsUpdate = true;
     }
     var maxLength = mesh.geometry.attributes.position.array.length;
     points    = new Float32Array(maxLength).fill(baseValue);
     normals   = new Float32Array(maxLength).fill(baseValue);
     counters = {};
-    currentFlag = 0;
-    console.timeEnd("enable color geometry");
 
     var brushModel = function onDocumentMouseMove(event) {
       var ray    = new THREE.Raycaster();
@@ -225,7 +170,6 @@ var toggleCADBrush = function(renderer, scene, controls, dataDisplayName, toggle
       mouse.x = (x) * 2 - 1;
       mouse.y = -(y) * 2 + 1;
       ray.setFromCamera(mouse, camera);
-
       ray.firstHitOnly = true;
 
       // draw(ray, mesh);
@@ -237,11 +181,11 @@ var toggleCADBrush = function(renderer, scene, controls, dataDisplayName, toggle
       renderer.domElement.onmousemove = null;
       controls.enabled = true;
       renderer.domElement.onmouseup = null;
-      // increment flag for next brush
-      currentFlag++;
     };
 
     var enableBrushTool = function onDocumentMouseDown(event) {
+      initSpline(new THREE.Vector3(), scene);
+
       var ray     = new THREE.Raycaster();
       var camera  = scene.getObjectByName('camera');
       var rect    = renderer.domElement.getBoundingClientRect();
