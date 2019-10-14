@@ -11,9 +11,7 @@
   },
   "author": "Orobix",
   "dependencies": {
-    "bootstrap": "^3.3.7",
-    "pjson": "^1.0.8",
     "three-stl-loader": "^1.0.6",
-    "underscore": "^1.8.3"
+    "threejs-export-stl": "0.0.4"
   }
 }

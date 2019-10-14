@@ -1,10 +1,13 @@
+/*  ================================================================  */
+/*  Library for toggle 3d brush on a single object                    */
+/*  ================================================================  */
+
 // Node modules
 var path       = require('path');
 var uuid       = require('uuid');
 var _          = require('underscore');
 var createTree = require(path.join('..', 'lib', 'yaot'));
 
-// const maxLength = 100000000;
 const baseValue = 99999;
 const color     = {r:1.0, g:0.0, b:0.0}; // RED BRUSH
 
@@ -18,11 +21,6 @@ var counters      = {};
 var brushedModel  = null;
 var splines       = [];
 
-
-/*  ================================================================  */
-/*  Library for toggle 3d brush on an object                         */
-/*  ================================================================  */
-
 // ============================================
 // Set the octree =============================
 // ============================================
@@ -31,7 +29,6 @@ var setOctree = function(renderingScene, dataDisplayName) {
   if (mesh) {
     // init bounds tree
     mesh.geometry.computeBoundsTree();
-
     octree[dataDisplayName] = createTree();
     octree[dataDisplayName].init(mesh.geometry.attributes.position.array);
 
@@ -57,7 +54,7 @@ var resetOctree = function() {
 };
 
 // ============================================
-// Get brushed vertices =======================
+// Brush ======================================
 // ============================================
 var draw = function(int, mesh) {
 
@@ -79,6 +76,10 @@ var draw = function(int, mesh) {
   mesh.geometry.colorsNeedUpdate = true;
 
 };
+
+// ============================================
+// Pointer ====================================
+// ============================================
 
 function placeSeeds(ray, mesh, scene) {
   var pointer = scene.getObjectByName('pointer');
@@ -104,6 +105,17 @@ function updateSeed(scene, zoomLevel) {
     pointer.scale.set(zoomLevel, zoomLevel, zoomLevel);
   }
 }
+
+// bind pointer dimension to actual zoom level
+function updateZoomLevel(event){
+  var zoom = Math.sqrt(event.target.target.distanceTo( event.target.object.position )) / 1;
+  var zoom = event.target.target.distanceTo( event.target.object.position ) / 100;
+  updateSeed(event.target.object.parent, zoom);
+}
+
+// ============================================
+// Curves =====================================
+// ============================================
 
 function initSpline(point, scene){
   var curve = new THREE.CatmullRomCurve3([]);
@@ -135,6 +147,10 @@ function renderCurve(curve, scene){
   }
 
 }
+
+// ============================================
+// Activate / Deactivate ======================
+// ============================================
 
 var toggleCADBrush = function(renderer, scene, controls, dataDisplayName, toggle, cb) {
   var mesh = scene.getObjectByName(dataDisplayName);
@@ -231,13 +247,6 @@ var toggleCADBrush = function(renderer, scene, controls, dataDisplayName, toggle
     }
   }
 };
-
-// bind pointer dimension to actual zoom level
-function updateZoomLevel(event){
-  var zoom = Math.sqrt(event.target.target.distanceTo( event.target.object.position )) / 1;
-  var zoom = event.target.target.distanceTo( event.target.object.position ) / 100;
-  updateSeed(event.target.object.parent, zoom);
-}
 
 /*  ================================================================  */
 /*  Exports functions                                                 */
