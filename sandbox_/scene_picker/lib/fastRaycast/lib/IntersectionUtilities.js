@@ -76,7 +76,7 @@ function checkBufferGeometryIntersection( object, raycaster, ray, position, uv, 
 		}
 
 		var normal = new THREE.Vector3();
-		intersection.face = new THREE.Face3( a, b, c, THREE.Triangle.normal( vA, vB, vC, normal ) );
+		intersection.face = new THREE.Face3( a, b, c, THREE.Triangle.getNormal( vA, vB, vC, normal ) );
 		intersection.faceIndex = a;
 
 	}

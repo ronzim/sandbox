@@ -91,6 +91,3 @@ ipcMain.on("main-process", function(event, args) {
       break;
   }
 });
-
-// spawn external process
-var vmtk = child_process.spawn( "./app_build/scene", [5525] );
