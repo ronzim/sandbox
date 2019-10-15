@@ -2,6 +2,7 @@ const electron    = require("electron")
 const child_process = require('child_process');
 const dialog      = electron.dialog
 const ipcMain     = electron.ipcMain
+const pjson       = require("./package.json");
 
 // Module to control application life.
 const app = electron.app
@@ -28,7 +29,7 @@ function createWindow () {
   mainWindow.loadURL(`file://${__dirname}/index.html`)
 
   // If dev, open the DevTools.
-  if (process.env.DEV == 'true'){
+  if (pjson.dev){
     mainWindow.webContents.openDevTools()
   }
 

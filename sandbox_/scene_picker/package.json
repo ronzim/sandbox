@@ -5,13 +5,13 @@
   "description": "Dev ambient for picking lib",
   "main": "main.js",
   "scripts": {
-    "start": "electron main.js",
-    "dev": "DEV=true electron main.js",
-    "silent": "DEV=true SILENT=true electron main.js"
+    "start": "electron main.js"
   },
   "author": "Orobix",
   "dependencies": {
-    "three-stl-loader": "^1.0.6",
-    "threejs-export-stl": "0.0.4"
+    "electron": "6.0.12",
+    "rafor": "1.0.2",
+    "three-stl-loader": "1.0.6",
+    "underscore": "1.9.1"
   }
 }
