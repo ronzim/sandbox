@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>marchingCubes</title>
+
+    <!-- CSS files -->
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <!-- Main CSS-->
+    <link href="css/main.css" rel="stylesheet">
+    <!-- icons font awesome -->
+    <!-- <link href="resources/font-awesome-4.5.0/css/font-awesome.min.css" rel="stylesheet"> -->
+
+    <!-- JS files -->
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="lib/jquery-2.2.3.min.js" onload="window.$ = window.jQuery = module.exports;"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="lib/bootstrap.min.js"></script>
+    <script src="lib/three.js"></script>
+    <script src="lib/TrackballControls.js"></script>
+
+    <!-- STL loader-->
+    <script src="lib/stl-loader.js"></script>
+
+    <!-- The core React library with add-ons-->
+    <script src="lib/react-with-addons.js"></script>
+    <script src="lib/react-dom.min.js"></script>
+    <script src="lib/react-slider.js"></script>
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+  </head>
+  <body>
+    <div id="chart-container">
+      <canvas id="chart" ></canvas>
+    </div>
+    <div id="app-container" class="container-fluid"></div>
+  </body>
+  <script>
+
+    var path     = require( 'path' );
+    var renderer = require('./js/gui/renderer');
+    renderer.render();
+
+  </script>
+  <script src="lib/bootstrap.js"></script>
+</html>

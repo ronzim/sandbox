@@ -3,4 +3,5 @@
 ./crop/ami_original
 ./bigDataIdeas/*.csv
 ./bigDataIdeas/position_data.json
+./sandbox_/*/node_modules/
 *.stl
