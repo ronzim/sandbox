@@ -9,14 +9,24 @@ import csv
 import plotly.graph_objects as pl
 from datetime import datetime, timezone
 
+## TODO
+#   - a serious db
+#   - a remove-last / reset keyword
+#   - maybe a graph
+
 SEND_CHAT = False
 CREATE_GRAPH = True
+CHAT_NAME = "Chi_paga?"
+CHAT_ID = 341554723
 
 def parse_msg(input_str):
     chi, quanto = input_str.split(' ')
-    print (chi, quanto)
+    print (type(chi) is str, type(quanto) is str)
     # sanity check
-    return chi, quanto
+    if (chi is not None, quanto is not None):
+        return chi, quanto
+    else:
+        return False, False
 
 def add_expense(who, val):
     lisa_tot = 0
@@ -24,18 +34,22 @@ def add_expense(who, val):
     # TODO add timestamp
     with open('common_expenses.csv', mode='a+') as out_file:
         csv_writer = csv.writer(out_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow([who, val])
+        csv_writer.writerow([who,val])
+    out_file.close()
     print ('C ', lisa_tot, mattia_tot)
 
-    with open('common_expenses.csv') as csv_file:
+    with open('common_expenses.csv', mode='r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         for row in csv_reader:
+            print ('R', row)
             name = row[0]
-            value = row[1]
-            if name == 'Lisa' : lisa_tot += value
-            if name == 'Mattia' : mattia_tot += value
-
-    print ('A ', lisa_tot, mattia_tot)
+            value = int(row[1])
+            if name.count('Lisa') or name.count('lisa'):
+                lisa_tot += value
+            elif name.count('Mattia') or name.count('mattia'):
+                mattia_tot += value
+            else :
+                print('nan')
 
     if mattia_tot > lisa_tot :
         next_payer = 'Lisa'
@@ -43,8 +57,6 @@ def add_expense(who, val):
     else :
         next_payer = 'Mattia'
         distance = lisa_tot - mattia_tot
-
-    print ('B ', next_payer, distance)
 
     return next_payer, distance
 
@@ -68,11 +80,14 @@ if __name__ == '__main__':
         print (" ------- RECEIVED NEW MESSAGE ------- ")
         print ('chat id: ', event.input_chat.chat_id)
         print ('raw msg: ', event.raw_text)
-        if (event.input_chat.chat_id == 334860988):
-            print ('>>>>>>> hey!')
+        if (event.input_chat.chat_id == CHAT_ID):
             entry_who, entry_val = parse_msg(event.raw_text)
-            next_payer, balance = add_expense(entry_who, entry_val)
-            print (next_payer, balance)
+            if (entry_who and entry_val):
+                next_payer, balance = add_expense(entry_who, entry_val)
+                message = 'Next to pay: ' + str(next_payer) + " " + str(balance)
+                print (message)
+                await client.send_message(CHAT_NAME, message)
+                # client.send_message(chat_name, message)
 
 
     client.run_until_disconnected()
