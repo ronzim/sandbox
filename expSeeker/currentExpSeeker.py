@@ -10,16 +10,21 @@ import plotly.graph_objects as pl
 from datetime import datetime, timezone
 
 SEND_CHAT = False
-CREATE_GRAPH = False
+CREATE_GRAPH = True
 
-expenses = {}
+expenses = [{},{},{},{},{},{},{},{},{},{}]
 
-def add_expense(type, val):
-    if type in list(expenses.keys()):
-        expenses[type] += val
+def get_month(date):
+    print (date)
+    return int(date.split('/')[0])
+
+def add_expense(type, val, date):
+    month_n = get_month(date)
+    if type in list(expenses[month_n].keys()):
+        expenses[month_n][type] += val
         new = False
     else:
-        expenses[type] = val
+        expenses[month_n][type] = val
         new = True
     return new
 
@@ -67,22 +72,24 @@ if __name__ == '__main__':
             type = msg[1]
             if len(msg)>2: mod = msg[2]
 
-            add_expense(type, value)
+            add_expense(type, value, correct_date)
 
     print ('\n ---- PARTIAL ----')
     tot = 0
 
-    for item in expenses:
-        print (item, expenses[item])
-        out_msg = item + ' : ' + str(expenses[item])
-        if SEND_CHAT : client.send_message("Spese", out_msg)
-        tot += expenses[item]
+    for month in expenses:
+        month_exp = expenses[month]
+        for item in month_exp:
+            print (item, month_exp[item])
+            out_msg = item + ' : ' + str(month_exp[item])
+            if SEND_CHAT : client.send_message("Spese", out_msg)
+            tot += month_exp[item]
 
     print ('\n ---- TOTAL ----')
     print (tot, '€')
     out_msg = 'total: ' + str(tot)
     if SEND_CHAT : client.send_message("Spese", out_msg)
 
-    if CREATE_GRAPH :
-        fig = pl.Figure(data=pl.Bar(x=list(expenses.keys()), y=list(expenses.values())))
-        fig.write_html('graph.html', auto_open=True)
+    # if CREATE_GRAPH :
+    #     fig = pl.Figure(data=pl.Bar(x=list(expenses.keys()), y=list(expenses.values())))
+    #     fig.write_html('graph.html', auto_open=True)
