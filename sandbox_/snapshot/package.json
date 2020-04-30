@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "bootstrap": "^3.3.7",
-    "jquery": "^3.1.1",
+    "jquery": "^3.5.0",
     "pjson": "^1.0.8",
     "prevent-backspace": "^1.0.0",
     "react": "^15.3.2",
