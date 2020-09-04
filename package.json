@@ -36,7 +36,7 @@
     "net-ping": "^1.2.3",
     "node-dir": "^0.1.17",
     "node-jq": "^1.5.0",
-    "papaparse": "^4.6.3",
+    "papaparse": "^5.3.0",
     "ping.js": "^0.2.1",
     "plotly.js-dist": "^1.45.2",
     "read-json-stream": "^1.1.0",
